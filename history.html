@@ -9,13 +9,14 @@
 <body class="bg-slate-100 font-sans min-h-screen">
 
   <!-- Header -->
-  <header class="sticky top-0 z-50 bg-blue-900 text-white shadow-lg">
+  <header class="sticky top-0 z-50 text-white shadow-lg" style="background: linear-gradient(105deg, #f59e0b 0%, #f59e0b 45%, #166534 55%, #166534 100%)">
     <div class="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="index.html" class="text-blue-200 hover:text-white text-sm font-bold">&larr; POS</a>
+      <button onclick="clearHistory()" class="text-orange-100 hover:text-white text-sm font-bold">Clear</button>
       <div class="text-center flex-1">
         <h1 class="text-2xl font-black tracking-wide">Order History</h1>
+        <p class="text-orange-100 text-sm mt-1">Vision Bazaar</p>
       </div>
-      <button onclick="clearHistory()" class="text-red-300 hover:text-red-100 text-sm font-bold">Clear</button>
+      <a href="index.html" class="text-orange-100 hover:text-white text-sm font-bold">POS &rarr;</a>
     </div>
   </header>
 
@@ -112,7 +113,7 @@
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
           <div class="flex justify-between items-start mb-2">
             <div>
-              <div class="font-black text-slate-900">Order #${order.orderNumber}</div>
+              <div class="font-black text-slate-900">#${order.orderNumber}</div>
               <div class="text-xs text-slate-400">${formatTime(order.timestamp)}</div>
             </div>
             <div class="flex items-center gap-2">

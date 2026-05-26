@@ -37,16 +37,19 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 font-sans min-h-screen pb-96">
+<body class="bg-slate-100 font-sans min-h-screen">
 
   <!-- Header -->
-  <header class="sticky top-0 z-50 bg-blue-900 text-white shadow-lg">
+  <header class="sticky top-0 z-50 text-white shadow-lg" style="background: linear-gradient(105deg, #f59e0b 0%, #f59e0b 45%, #166534 55%, #166534 100%)">
     <div class="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+      <button onclick="showQR()" class="text-orange-100 hover:text-white text-sm font-bold">
+        Zelle QR
+      </button>
       <div class="text-center flex-1">
         <h1 class="text-2xl font-black tracking-wide">Vision Bazaar</h1>
-        <p class="text-blue-200 text-sm mt-1">Cashier POS</p>
+        <p class="text-orange-100 text-sm mt-1">Cashier POS</p>
       </div>
-      <a href="history.html" class="text-blue-200 hover:text-white text-sm font-bold">
+      <a href="history.html" class="text-orange-100 hover:text-white text-sm font-bold">
         History
       </a>
     </div>
@@ -60,13 +63,16 @@
       <div id="menu-grid" class="grid grid-cols-2 gap-3"></div>
     </section>
 
-    <!-- QR -->
-    <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col items-center">
-      <div class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-black mb-4">Scan to Pay via Zelle</div>
-      <img src="zelle-qr.png" alt="Zelle QR" class="w-64 h-64 rounded-3xl border-4 border-blue-900 bg-white" />
-      <div class="text-center mt-4">
-        <div class="font-black text-slate-900 text-lg">Finance@kepc.org</div>
-        <div class="text-sm text-slate-400 mt-1">Scan &rarr; Enter Amount &rarr; Send</div>
+    <!-- QR (shown on Zelle tap) -->
+    <section id="qr-section" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="hideQR()">
+      <div class="bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center max-w-sm mx-4" onclick="event.stopPropagation()">
+        <div class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-black mb-4">Scan to Pay via Zelle</div>
+        <img src="zelle-qr.png" alt="Zelle QR" class="w-64 h-64 rounded-3xl border-4 border-blue-900 bg-white" />
+        <div class="text-center mt-4">
+          <div class="font-black text-slate-900 text-lg">Finance@kepc.org</div>
+          <div class="text-sm text-slate-400 mt-1">Scan &rarr; Enter Amount &rarr; Send</div>
+        </div>
+        <button onclick="hideQR()" class="mt-4 px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-bold text-sm">Close</button>
       </div>
     </section>
 
@@ -94,7 +100,11 @@
           <div class="text-center text-slate-400 italic py-2">Cart is empty</div>
         </div>
 
-        <div class="grid grid-cols-3 gap-2">
+        <div id="processing-spinner" class="hidden text-center py-2">
+          <span class="inline-block w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin"></span>
+          <span class="text-sm text-slate-500 ml-2 font-bold">Saving...</span>
+        </div>
+        <div id="payment-buttons" class="grid grid-cols-3 gap-2">
           <button onclick="confirmPayment('Zelle')" class="bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
             Zelle
           </button>
@@ -128,7 +138,11 @@
     ];
 
     let cart = {};
-    let currentOrderNumber = parseInt(localStorage.getItem('vision_order_number') || '1001');
+    let currentOrderId = generateOrderId();
+
+    function generateOrderId() {
+      return Math.random().toString(36).substring(2, 6).toUpperCase();
+    }
 
     // =========================
     // RENDER MENU
@@ -181,6 +195,7 @@
       cartExpanded = !cartExpanded;
       document.getElementById('cart-details').classList.toggle('hidden', !cartExpanded);
       document.getElementById('cart-toggle').innerHTML = cartExpanded ? '&#9660;' : '&#9650;';
+      requestAnimationFrame(updateBottomPadding);
     }
 
     function updateUI() {
@@ -189,7 +204,7 @@
       const orderEl = document.getElementById('order-number');
       const badge = document.getElementById('cart-badge');
 
-      orderEl.innerText = `Order #${currentOrderNumber}`;
+      orderEl.innerText = `#${currentOrderId}`;
       const total = getTotal();
       const itemCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
 
@@ -219,6 +234,18 @@
       }
 
       totalEl.innerText = `$${total}`;
+      requestAnimationFrame(updateBottomPadding);
+    }
+
+    // =========================
+    // QR MODAL
+    // =========================
+    function showQR() {
+      document.getElementById('qr-section').classList.remove('hidden');
+    }
+
+    function hideQR() {
+      document.getElementById('qr-section').classList.add('hidden');
     }
 
     // =========================
@@ -235,15 +262,30 @@
     // =========================
     // PAYMENT
     // =========================
+    let processing = false;
+
+    function setProcessing(state) {
+      processing = state;
+      const buttons = document.querySelectorAll('#payment-buttons button');
+      buttons.forEach(btn => {
+        btn.disabled = state;
+        btn.classList.toggle('opacity-50', state);
+        btn.classList.toggle('pointer-events-none', state);
+      });
+      document.getElementById('processing-spinner').classList.toggle('hidden', !state);
+    }
+
     async function confirmPayment(method) {
       const total = getTotal();
-      if (total === 0) return;
+      if (total === 0 || processing) return;
+
+      setProcessing(true);
 
       const items = Object.entries(cart).map(([name, item]) => `${item.qty}x ${name}`);
 
       const orderData = {
         timestamp: new Date().toISOString(),
-        orderNumber: currentOrderNumber,
+        orderNumber: currentOrderId,
         paymentMethod: method,
         items: items.join(', '),
         total: total
@@ -255,29 +297,35 @@
       localStorage.setItem('vision_orders', JSON.stringify(history));
 
       // Send to Google Sheets
-      if (GOOGLE_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycby8BfjMgQQcpBkouhgq3Exa7tKclTx_ii5rbw8a3dnJV3w7i3EiUNqvrRIb7wYtuaPt/exec') {
-        try {
-          await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
-          });
-        } catch (err) {
-          console.error('Failed to save to Google Sheets', err);
-        }
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(orderData)
+        });
+      } catch (err) {
+        console.error('Failed to save to Google Sheets', err);
       }
 
-      showToast(`Order #${currentOrderNumber} - $${total} (${method})`);
+      setProcessing(false);
+      showToast(`#${currentOrderId} - $${total} (${method})`);
 
-      currentOrderNumber += 1;
-      localStorage.setItem('vision_order_number', currentOrderNumber.toString());
+      currentOrderId = generateOrderId();
       clearCart();
+    }
+
+    // =========================
+    // BOTTOM PADDING
+    // =========================
+    function updateBottomPadding() {
+      const cart = document.getElementById('cart-section');
+      document.body.style.paddingBottom = cart.offsetHeight + 16 + 'px';
     }
 
     // INIT
     renderMenu();
     updateUI();
+    updateBottomPadding();
+    window.addEventListener('resize', updateBottomPadding);
   </script>
 </body>
 </html>

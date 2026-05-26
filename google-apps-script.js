@@ -3,7 +3,7 @@
  *
  * SETUP:
  * 1. Create a new Google Sheet
- * 2. Add headers in Row 1: Timestamp | Order# | Payment | Items | Total
+ * 2. Add headers in Row 1: Timestamp | Order ID | Payment | Items | Total
  * 3. Go to Extensions > Apps Script
  * 4. Paste this code, save
  * 5. Click Deploy > New deployment > Web app
@@ -14,7 +14,7 @@
 
 function doPost(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = JSON.parse(e.postData.contents);
+  const data = JSON.parse(e.postData.contents || '{}');
 
   sheet.appendRow([
     data.timestamp,
