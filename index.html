@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Vision Bazaar POS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    .menu-btn {
+      background: white;
+      border-radius: 1.25rem;
+      padding: 1rem;
+      border: 1px solid #e2e8f0;
+      text-align: left;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: all 0.12s ease;
+    }
+    .menu-btn:active { transform: scale(0.97); background: #eff6ff; }
+    .price { color: #2563eb; font-weight: 900; margin-top: 0.35rem; font-size: 1.125rem; }
+    .qty-btn {
+      width: 38px; height: 38px; border-radius: 999px;
+      font-size: 1.25rem; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .toast {
+      position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+      background: #065f46; color: white; padding: 0.75rem 1.5rem;
+      border-radius: 1rem; font-weight: 700; z-index: 9999;
+      animation: fadeInOut 2s ease forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen pb-96">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-blue-900 text-white shadow-lg">
+    <div class="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="text-center flex-1">
+        <h1 class="text-2xl font-black tracking-wide">Vision Bazaar</h1>
+        <p class="text-blue-200 text-sm mt-1">Cashier POS</p>
+      </div>
+      <a href="history.html" class="text-blue-200 hover:text-white text-sm font-bold">
+        History
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto p-4 space-y-5">
+
+    <!-- Menu -->
+    <section>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Menu</h2>
+      <div id="menu-grid" class="grid grid-cols-2 gap-3"></div>
+    </section>
+
+    <!-- QR -->
+    <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col items-center">
+      <div class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-black mb-4">Scan to Pay via Zelle</div>
+      <img src="zelle-qr.png" alt="Zelle QR" class="w-64 h-64 rounded-3xl border-4 border-blue-900 bg-white" />
+      <div class="text-center mt-4">
+        <div class="font-black text-slate-900 text-lg">Finance@kepc.org</div>
+        <div class="text-sm text-slate-400 mt-1">Scan &rarr; Enter Amount &rarr; Send</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Sticky Cart -->
+  <section id="cart-section" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl">
+    <div class="max-w-md mx-auto p-4">
+
+      <!-- Collapsed bar (always visible, tap to expand) -->
+      <div onclick="toggleCart()" class="flex items-center justify-between cursor-pointer">
+        <div class="flex items-center gap-3">
+          <div id="order-number" class="text-lg font-black text-blue-900">Order #1001</div>
+          <span id="cart-badge" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full hidden">0 items</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div id="cart-total" class="text-2xl font-black text-blue-900">$0</div>
+          <span id="cart-toggle" class="text-slate-400 text-xl">&#9650;</span>
+        </div>
+      </div>
+
+      <!-- Expandable details -->
+      <div id="cart-details" class="mt-3">
+        <div id="cart-items" class="space-y-2 max-h-36 overflow-y-auto mb-3">
+          <div class="text-center text-slate-400 italic py-2">Cart is empty</div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="confirmPayment('Zelle')" class="bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
+            Zelle
+          </button>
+          <button onclick="confirmPayment('Cash')" class="bg-slate-800 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
+            Cash
+          </button>
+          <button onclick="clearCart()" class="bg-red-100 text-red-600 py-4 rounded-2xl font-black text-base active:scale-95 transition">
+            Clear
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <script>
+    // =========================
+    // CONFIG
+    // =========================
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8BfjMgQQcpBkouhgq3Exa7tKclTx_ii5rbw8a3dnJV3w7i3EiUNqvrRIb7wYtuaPt/exec';
+
+    const MENU_ITEMS = [
+      { name: '닭곰탕', emoji: '🍲', price: 5 },
+      { name: '밀크티', emoji: '🧋', price: 4 },
+      { name: 'Refreshing 팡팡 스파클링 에이드', emoji: '🥤', price: 4 },
+      { name: '커피 (아아/뜨아)', emoji: '☕', price: 3 },
+      { name: '아포가또', emoji: '🍨', price: 5 },
+      { name: '떡볶이', emoji: '🌶️', price: 5 },
+      { name: '쿠키 5개', emoji: '🍪', price: 4 },
+      { name: '쿠키 10개', emoji: '🍪', price: 7 },
+    ];
+
+    let cart = {};
+    let currentOrderNumber = parseInt(localStorage.getItem('vision_order_number') || '1001');
+
+    // =========================
+    // RENDER MENU
+    // =========================
+    function renderMenu() {
+      const grid = document.getElementById('menu-grid');
+      grid.innerHTML = MENU_ITEMS.map(item => `
+        <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn">
+          <div class="text-3xl mb-2">${item.emoji}</div>
+          <div class="font-bold text-slate-900">${item.name}</div>
+          <div class="price">$${item.price}</div>
+        </button>
+      `).join('');
+    }
+
+    // =========================
+    // CART
+    // =========================
+    function addToCart(name, price) {
+      if (cart[name]) {
+        cart[name].qty += 1;
+      } else {
+        cart[name] = { price, qty: 1 };
+      }
+      updateUI();
+    }
+
+    function decreaseItem(name) {
+      if (!cart[name]) return;
+      cart[name].qty -= 1;
+      if (cart[name].qty <= 0) delete cart[name];
+      updateUI();
+    }
+
+    function clearCart() {
+      cart = {};
+      updateUI();
+    }
+
+    function getTotal() {
+      return Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+    }
+
+    // =========================
+    // UI
+    // =========================
+    let cartExpanded = true;
+
+    function toggleCart() {
+      cartExpanded = !cartExpanded;
+      document.getElementById('cart-details').classList.toggle('hidden', !cartExpanded);
+      document.getElementById('cart-toggle').innerHTML = cartExpanded ? '&#9660;' : '&#9650;';
+    }
+
+    function updateUI() {
+      const cartItems = document.getElementById('cart-items');
+      const totalEl = document.getElementById('cart-total');
+      const orderEl = document.getElementById('order-number');
+      const badge = document.getElementById('cart-badge');
+
+      orderEl.innerText = `Order #${currentOrderNumber}`;
+      const total = getTotal();
+      const itemCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+
+      if (itemCount > 0) {
+        badge.textContent = `${itemCount} item${itemCount > 1 ? 's' : ''}`;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (total === 0) {
+        cartItems.innerHTML = '<div class="text-center text-slate-400 italic py-2">Cart is empty</div>';
+      } else {
+        cartItems.innerHTML = Object.entries(cart).map(([name, item]) => `
+          <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2">
+            <div>
+              <div class="font-bold text-slate-900 text-sm">${name}</div>
+              <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="decreaseItem('${name}')" class="qty-btn bg-red-100 text-red-600">&minus;</button>
+              <div class="font-black text-lg w-6 text-center">${item.qty}</div>
+              <button onclick="addToCart('${name}', ${item.price})" class="qty-btn bg-blue-100 text-blue-700">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      totalEl.innerText = `$${total}`;
+    }
+
+    // =========================
+    // TOAST
+    // =========================
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2200);
+    }
+
+    // =========================
+    // PAYMENT
+    // =========================
+    async function confirmPayment(method) {
+      const total = getTotal();
+      if (total === 0) return;
+
+      const items = Object.entries(cart).map(([name, item]) => `${item.qty}x ${name}`);
+
+      const orderData = {
+        timestamp: new Date().toISOString(),
+        orderNumber: currentOrderNumber,
+        paymentMethod: method,
+        items: items.join(', '),
+        total: total
+      };
+
+      // Save to local history
+      const history = JSON.parse(localStorage.getItem('vision_orders') || '[]');
+      history.unshift(orderData);
+      localStorage.setItem('vision_orders', JSON.stringify(history));
+
+      // Send to Google Sheets
+      if (GOOGLE_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycby8BfjMgQQcpBkouhgq3Exa7tKclTx_ii5rbw8a3dnJV3w7i3EiUNqvrRIb7wYtuaPt/exec') {
+        try {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+          });
+        } catch (err) {
+          console.error('Failed to save to Google Sheets', err);
+        }
+      }
+
+      showToast(`Order #${currentOrderNumber} - $${total} (${method})`);
+
+      currentOrderNumber += 1;
+      localStorage.setItem('vision_order_number', currentOrderNumber.toString());
+      clearCart();
+    }
+
+    // INIT
+    renderMenu();
+    updateUI();
+  </script>
+</body>
+</html>

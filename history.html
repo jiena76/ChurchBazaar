@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Order History - Vision Bazaar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-blue-900 text-white shadow-lg">
+    <div class="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="index.html" class="text-blue-200 hover:text-white text-sm font-bold">&larr; POS</a>
+      <div class="text-center flex-1">
+        <h1 class="text-2xl font-black tracking-wide">Order History</h1>
+      </div>
+      <button onclick="clearHistory()" class="text-red-300 hover:text-red-100 text-sm font-bold">Clear</button>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto p-4 space-y-3">
+
+    <!-- Summary -->
+    <section id="summary" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <div class="text-xs uppercase tracking-wide text-slate-400 font-bold">Orders</div>
+          <div id="total-orders" class="text-2xl font-black text-slate-900">0</div>
+        </div>
+        <div>
+          <div class="text-xs uppercase tracking-wide text-slate-400 font-bold">Total Sales</div>
+          <div id="total-sales" class="text-2xl font-black text-green-700">$0</div>
+        </div>
+        <div>
+          <div class="text-xs uppercase tracking-wide text-slate-400 font-bold">Zelle / Cash</div>
+          <div id="payment-split" class="text-lg font-black text-slate-700">0 / 0</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter -->
+    <section class="flex gap-2">
+      <button onclick="filterOrders('all')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-blue-900 text-white">All</button>
+      <button onclick="filterOrders('Zelle')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Zelle</button>
+      <button onclick="filterOrders('Cash')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Cash</button>
+    </section>
+
+    <!-- Order List -->
+    <section id="order-list" class="space-y-3"></section>
+
+    <div id="empty-state" class="text-center text-slate-400 italic py-12 hidden">
+      No orders yet
+    </div>
+
+  </main>
+
+  <script>
+    let currentFilter = 'all';
+
+    function getOrders() {
+      return JSON.parse(localStorage.getItem('vision_orders') || '[]');
+    }
+
+    function clearHistory() {
+      if (!confirm('Clear all local order history? (Google Sheets data is not affected)')) return;
+      localStorage.removeItem('vision_orders');
+      render();
+    }
+
+    function filterOrders(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.className = 'filter-btn px-4 py-2 rounded-full text-sm font-bold ' +
+          (btn.textContent.trim().toLowerCase() === filter.toLowerCase() || (filter === 'all' && btn.textContent.trim() === 'All')
+            ? 'bg-blue-900 text-white'
+            : 'bg-white text-slate-700 border');
+      });
+      render();
+    }
+
+    function formatTime(isoString) {
+      const d = new Date(isoString);
+      return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    function render() {
+      const orders = getOrders();
+      const filtered = currentFilter === 'all' ? orders : orders.filter(o => o.paymentMethod === currentFilter);
+
+      // Summary
+      const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+      const zelleCount = orders.filter(o => o.paymentMethod === 'Zelle').length;
+      const cashCount = orders.filter(o => o.paymentMethod === 'Cash').length;
+
+      document.getElementById('total-orders').textContent = orders.length;
+      document.getElementById('total-sales').textContent = `$${totalSales}`;
+      document.getElementById('payment-split').textContent = `${zelleCount} / ${cashCount}`;
+
+      // List
+      const list = document.getElementById('order-list');
+      const empty = document.getElementById('empty-state');
+
+      if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      list.innerHTML = filtered.map(order => `
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <div class="font-black text-slate-900">Order #${order.orderNumber}</div>
+              <div class="text-xs text-slate-400">${formatTime(order.timestamp)}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-1 rounded-full text-xs font-bold ${
+                order.paymentMethod === 'Zelle' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'
+              }">${order.paymentMethod}</span>
+              <span class="font-black text-blue-900 text-lg">$${order.total}</span>
+            </div>
+          </div>
+          <div class="text-sm text-slate-600">${order.items}</div>
+        </div>
+      `).join('');
+    }
+
+    render();
+  </script>
+</body>
+</html>
