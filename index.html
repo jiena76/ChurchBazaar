@@ -139,13 +139,13 @@
       { name: '커피 (아아/뜨아)', emoji: '☕', price: 3 },
       { name: '아포가또', emoji: '🍨', price: 5 },
       { name: '떡볶이', emoji: '🌶️', price: 5 },
-      { name: '쿠키 5개', emoji: '🍪', price: 4 },
-      { name: '쿠키 10개', emoji: '🍪🍪', price: 7 },
+      { name: '쿠키 1팩 (총 5개)', emoji: '🍪', price: 4 },
+      { name: '쿠키 2팩 (총 10개)', emoji: '🍪🍪', price: 7 },
     ];
 
     const MEALKIT_ITEMS = [
       { name: '돈까스', emoji: '🐷', price: 25 },
-      { name: '닭갈비', emoji: '🍗', price: 30 },
+      { name: '닭갈비', emoji: '🐔', price: 30 },
     ];
 
     let cart = {};
@@ -202,13 +202,16 @@
       updateUI();
     }
 
-    function getTotal() {
-      let total = Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+    function getDiscount() {
       if (cart['돈까스'] && cart['닭갈비']) {
-        const combos = Math.min(cart['돈까스'].qty, cart['닭갈비'].qty);
-        total -= combos * 5;
+        return Math.min(cart['돈까스'].qty, cart['닭갈비'].qty) * 5;
       }
-      return total;
+      return 0;
+    }
+
+    function getTotal() {
+      const subtotal = Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      return subtotal - getDiscount();
     }
 
     // =========================
@@ -243,7 +246,7 @@
       if (total === 0) {
         cartItems.innerHTML = '<div class="text-center text-slate-400 italic py-2">Cart is empty</div>';
       } else {
-        cartItems.innerHTML = Object.entries(cart).map(([name, item]) => `
+        let html = Object.entries(cart).map(([name, item]) => `
           <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2">
             <div>
               <div class="font-bold text-slate-900 text-sm">${name}</div>
@@ -256,6 +259,17 @@
             </div>
           </div>
         `).join('');
+
+        const discount = getDiscount();
+        if (discount > 0) {
+          html += `
+            <div class="flex justify-between items-center bg-green-50 rounded-xl px-3 py-2 border border-green-200">
+              <div class="font-bold text-green-700 text-sm">밀키트 세트 할인</div>
+              <div class="font-black text-green-700">-$${discount}</div>
+            </div>
+          `;
+        }
+        cartItems.innerHTML = html;
       }
 
       totalEl.innerText = `$${total}`;
