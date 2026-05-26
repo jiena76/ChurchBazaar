@@ -24,9 +24,10 @@
       display: flex; align-items: center; justify-content: center;
     }
     .toast {
-      position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
-      background: #065f46; color: white; padding: 0.75rem 1.5rem;
+      position: fixed; top: 5rem; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: white; padding: 0.75rem 1.5rem;
       border-radius: 1rem; font-weight: 700; z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       animation: fadeInOut 2s ease forwards;
     }
     @keyframes fadeInOut {
@@ -182,6 +183,7 @@
     // CART
     // =========================
     function addToCart(name, price) {
+      if (processing) return;
       if (cart[name]) {
         cart[name].qty += 1;
       } else {
@@ -191,6 +193,7 @@
     }
 
     function decreaseItem(name) {
+      if (processing) return;
       if (!cart[name]) return;
       cart[name].qty -= 1;
       if (cart[name].qty <= 0) delete cart[name];
