@@ -63,6 +63,12 @@
       <div id="menu-grid" class="grid grid-cols-2 gap-3"></div>
     </section>
 
+    <!-- Meal Kits -->
+    <section>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Meal Kits</h2>
+      <div id="mealkit-grid" class="grid grid-cols-2 gap-3"></div>
+    </section>
+
     <!-- QR (shown on Zelle tap) -->
     <section id="qr-section" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="hideQR()">
       <div class="bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center max-w-sm mx-4" onclick="event.stopPropagation()">
@@ -134,7 +140,12 @@
       { name: '아포가또', emoji: '🍨', price: 5 },
       { name: '떡볶이', emoji: '🌶️', price: 5 },
       { name: '쿠키 5개', emoji: '🍪', price: 4 },
-      { name: '쿠키 10개', emoji: '🍪', price: 7 },
+      { name: '쿠키 10개', emoji: '🍪🍪', price: 7 },
+    ];
+
+    const MEALKIT_ITEMS = [
+      { name: '돈까스', emoji: '🐷', price: 25 },
+      { name: '닭갈비', emoji: '🍗', price: 30 },
     ];
 
     let cart = {};
@@ -150,6 +161,15 @@
     function renderMenu() {
       const grid = document.getElementById('menu-grid');
       grid.innerHTML = MENU_ITEMS.map(item => `
+        <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn">
+          <div class="text-3xl mb-2">${item.emoji}</div>
+          <div class="font-bold text-slate-900">${item.name}</div>
+          <div class="price">$${item.price}</div>
+        </button>
+      `).join('');
+
+      const mealkitGrid = document.getElementById('mealkit-grid');
+      mealkitGrid.innerHTML = MEALKIT_ITEMS.map(item => `
         <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn">
           <div class="text-3xl mb-2">${item.emoji}</div>
           <div class="font-bold text-slate-900">${item.name}</div>
@@ -183,7 +203,12 @@
     }
 
     function getTotal() {
-      return Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      let total = Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      if (cart['돈까스'] && cart['닭갈비']) {
+        const combos = Math.min(cart['돈까스'].qty, cart['닭갈비'].qty);
+        total -= combos * 5;
+      }
+      return total;
     }
 
     // =========================
