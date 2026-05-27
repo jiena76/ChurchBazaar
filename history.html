@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Order History - Vision Bazaar</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
 </head>
 <body class="bg-slate-100 font-sans min-h-screen">
 
@@ -45,6 +48,7 @@
       <button onclick="filterOrders('all')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-blue-900 text-white">All</button>
       <button onclick="filterOrders('Zelle')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Zelle</button>
       <button onclick="filterOrders('Cash')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Cash</button>
+      <button onclick="filterOrders('Cancelled')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Cancelled</button>
     </section>
 
     <!-- Order List -->
@@ -56,11 +60,41 @@
 
   </main>
 
+  <!-- Edit Modal -->
+  <section id="edit-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="closeEditModal()">
+    <div class="bg-white rounded-3xl p-5 shadow-2xl max-w-sm mx-4 w-full max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-black text-lg text-slate-900">Edit Order <span id="edit-order-id"></span></h2>
+        <button onclick="closeEditModal()" class="text-slate-400 text-xl font-bold">&times;</button>
+      </div>
+      <div id="edit-items" class="space-y-2 mb-4"></div>
+      <div class="flex justify-between items-center mb-4 pt-3 border-t">
+        <span class="font-bold text-slate-700">Total</span>
+        <span id="edit-total" class="text-xl font-black text-blue-900">$0</span>
+      </div>
+      <button onclick="saveEdit()" class="w-full bg-blue-900 text-white py-3 rounded-2xl font-black active:scale-95 transition">Save Changes</button>
+    </div>
+  </section>
+
   <script>
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8BfjMgQQcpBkouhgq3Exa7tKclTx_ii5rbw8a3dnJV3w7i3EiUNqvrRIb7wYtuaPt/exec';
+
+    const MENU_PRICES = {
+      '닭곰탕': 5, '떡볶이': 5, '밀크티': 4, '밀크티 + 🍦': 5,
+      'Refreshing 팡팡 스파클링 에이드': 3, '커피 (Ice/Hot)': 3,
+      '쿠키 1팩 (5)': 4, '쿠키 2팩 (10)': 7, '돈까스': 25, '닭갈비': 30
+    };
+
     let currentFilter = 'all';
+    let editingIndex = -1;
+    let editCart = {};
 
     function getOrders() {
       return JSON.parse(localStorage.getItem('vision_orders') || '[]');
+    }
+
+    function saveOrders(orders) {
+      localStorage.setItem('vision_orders', JSON.stringify(orders));
     }
 
     function clearHistory() {
@@ -72,10 +106,10 @@
     function filterOrders(filter) {
       currentFilter = filter;
       document.querySelectorAll('.filter-btn').forEach(btn => {
+        const text = btn.textContent.trim();
+        const match = (filter === 'all' && text === 'All') || text === filter;
         btn.className = 'filter-btn px-4 py-2 rounded-full text-sm font-bold ' +
-          (btn.textContent.trim().toLowerCase() === filter.toLowerCase() || (filter === 'all' && btn.textContent.trim() === 'All')
-            ? 'bg-blue-900 text-white'
-            : 'bg-white text-slate-700 border');
+          (match ? 'bg-blue-900 text-white' : 'bg-white text-slate-700 border');
       });
       render();
     }
@@ -85,16 +119,183 @@
       return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
+    function getRemovedItems(previousItemsStr, newCart) {
+      const oldCart = {};
+      previousItemsStr.split(', ').forEach(part => {
+        const match = part.match(/^(\d+)x (.+)$/);
+        if (match) oldCart[match[2]] = parseInt(match[1]);
+      });
+      const removed = [];
+      for (const [name, oldQty] of Object.entries(oldCart)) {
+        const newQty = newCart[name] ? newCart[name].qty : 0;
+        if (oldQty > newQty) {
+          removed.push({ name, qty: oldQty - newQty });
+        }
+      }
+      return removed;
+    }
+
+    // Cancel order
+    function cancelOrder(index) {
+      if (!confirm('Cancel this order?')) return;
+      const orders = getOrders();
+      const order = orders[index];
+      if (!order.history) order.history = [];
+      order.history.push({
+        action: 'cancelled',
+        timestamp: new Date().toISOString(),
+        previousItems: order.items,
+        previousTotal: order.total
+      });
+      order.status = 'cancelled';
+      order.total = 0;
+      saveOrders(orders);
+      syncToSheets({ ...order, action: 'cancel' });
+      render();
+    }
+
+    // Edit order
+    function openEditModal(index) {
+      editingIndex = index;
+      const orders = getOrders();
+      const order = orders[index];
+      editCart = parseItems(order.items);
+      renderEditModal();
+      document.getElementById('edit-modal').classList.remove('hidden');
+      document.getElementById('edit-order-id').textContent = '#' + order.orderNumber;
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+      editingIndex = -1;
+    }
+
+    function parseItems(itemString) {
+      const cart = {};
+      itemString.split(', ').forEach(part => {
+        const match = part.match(/^(\d+)x (.+)$/);
+        if (match) {
+          const qty = parseInt(match[1]);
+          const name = match[2];
+          cart[name] = { qty, price: MENU_PRICES[name] || 0 };
+        }
+      });
+      return cart;
+    }
+
+    function getEditTotal() {
+      return Object.values(editCart).reduce((sum, item) => sum + item.price * item.qty, 0);
+    }
+
+
+    function editDecrease(name) {
+      if (!editCart[name]) return;
+      editCart[name].qty -= 1;
+      if (editCart[name].qty <= 0) delete editCart[name];
+      renderEditModal();
+    }
+
+    function renderEditModal() {
+      const container = document.getElementById('edit-items');
+      if (Object.keys(editCart).length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-400 italic py-2">No items</div>';
+      } else {
+        container.innerHTML = Object.entries(editCart).map(([name, item]) => `
+          <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2">
+            <div>
+              <div class="font-bold text-slate-900 text-sm">${name}</div>
+              <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="editDecrease('${name}')" class="w-8 h-8 rounded-full bg-red-100 text-red-600 font-black flex items-center justify-center">&minus;</button>
+              <div class="font-black text-lg w-6 text-center">${item.qty}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+      document.getElementById('edit-total').textContent = `$${getEditTotal()}`;
+    }
+
+    function saveEdit() {
+      const orders = getOrders();
+      const order = orders[editingIndex];
+      const newItems = Object.entries(editCart).map(([name, item]) => `${item.qty}x ${name}`).join(', ');
+      const newTotal = getEditTotal();
+
+      if (!order.history) order.history = [];
+
+      if (Object.keys(editCart).length === 0) {
+        order.history.push({
+          action: 'cancelled',
+          timestamp: new Date().toISOString(),
+          previousItems: order.items,
+          previousTotal: order.total
+        });
+        order.items = '';
+        order.total = 0;
+        order.status = 'cancelled';
+        saveOrders(orders);
+        syncToSheets({ ...order, action: 'cancel' });
+      } else {
+        const removed = getRemovedItems(order.items, editCart);
+        if (removed.length === 0) {
+          closeEditModal();
+          return;
+        }
+        const remaining = {};
+        removed.forEach(r => {
+          if (editCart[r.name]) remaining[r.name] = editCart[r.name].qty;
+        });
+        order.history.push({
+          action: 'removed',
+          timestamp: new Date().toISOString(),
+          removed: removed,
+          remaining: remaining
+        });
+        const removedForSheets = removed.map(r => ({
+          name: r.name,
+          qty: r.qty,
+          remaining: editCart[r.name] ? editCart[r.name].qty : 0
+        }));
+        order.items = newItems;
+        order.total = newTotal;
+        saveOrders(orders);
+        syncToSheets({ ...order, action: 'update', removedItems: removedForSheets });
+      }
+
+      closeEditModal();
+      render();
+    }
+
+    async function syncToSheets(data) {
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+      } catch (err) {
+        console.error('Failed to sync to Google Sheets', err);
+      }
+    }
+
     function render() {
       const orders = getOrders();
-      const filtered = currentFilter === 'all' ? orders : orders.filter(o => o.paymentMethod === currentFilter);
+      let filtered;
+      if (currentFilter === 'Cancelled') {
+        filtered = orders.filter(o => o.status === 'cancelled');
+      } else if (currentFilter === 'all') {
+        filtered = orders;
+      } else {
+        filtered = orders.filter(o => o.paymentMethod === currentFilter && o.status !== 'cancelled');
+      }
 
-      // Summary
-      const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
-      const zelleCount = orders.filter(o => o.paymentMethod === 'Zelle').length;
-      const cashCount = orders.filter(o => o.paymentMethod === 'Cash').length;
+      // Summary (exclude cancelled)
+      const activeOrders = orders.filter(o => o.status !== 'cancelled');
+      const totalSales = activeOrders.reduce((sum, o) => sum + o.total, 0);
+      const zelleCount = activeOrders.filter(o => o.paymentMethod === 'Zelle').length;
+      const cashCount = activeOrders.filter(o => o.paymentMethod === 'Cash').length;
 
-      document.getElementById('total-orders').textContent = orders.length;
+      document.getElementById('total-orders').textContent = activeOrders.length;
       document.getElementById('total-sales').textContent = `$${totalSales}`;
       document.getElementById('payment-split').textContent = `${zelleCount} / ${cashCount}`;
 
@@ -109,23 +310,53 @@
       }
 
       empty.classList.add('hidden');
-      list.innerHTML = filtered.map(order => `
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <div class="font-black text-slate-900">#${order.orderNumber}</div>
-              <div class="text-xs text-slate-400">${formatTime(order.timestamp)}</div>
+      list.innerHTML = filtered.map((order, i) => {
+        const realIndex = orders.indexOf(order);
+        const isCancelled = order.status === 'cancelled';
+        const historyHtml = order.history && order.history.length > 0
+          ? `<div class="mt-2 pt-2 border-t border-slate-100 space-y-1">
+              ${order.history.map(h => {
+                if (h.action === 'removed') {
+                  const parts = h.removed.map(r => {
+                    const remaining = (h.remaining && h.remaining[r.name]) || 0;
+                    let str = `<span class="line-through">${r.qty}x ${r.name}</span>`;
+                    if (remaining > 0) str += `, ${remaining}x ${r.name}`;
+                    return str;
+                  }).join(', ');
+                  return `<div class="text-xs text-slate-400"><span class="font-bold text-blue-400">updated</span> ${formatTime(h.timestamp)} — ${parts}</div>`;
+                } else if (h.action === 'cancelled') {
+                  return `<div class="text-xs text-slate-400"><span class="font-bold text-red-400">cancelled</span> ${formatTime(h.timestamp)} — was: ${h.previousItems} ($${h.previousTotal})</div>`;
+                }
+                return '';
+              }).join('')}
+            </div>`
+          : '';
+
+        return `
+          <div class="bg-white rounded-2xl p-4 shadow-sm border ${isCancelled ? 'border-red-200 opacity-60' : 'border-slate-200'}">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-black text-slate-900">#${order.orderNumber}${isCancelled ? ' <span class="text-red-500 text-xs font-bold">CANCELLED</span>' : ''}</div>
+                <div class="text-xs text-slate-400">${formatTime(order.timestamp)}</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-1 rounded-full text-xs font-bold ${
+                  order.paymentMethod === 'Zelle' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'
+                }">${order.paymentMethod}</span>
+                <span class="font-black text-blue-900 text-lg">$${order.total}</span>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-1 rounded-full text-xs font-bold ${
-                order.paymentMethod === 'Zelle' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'
-              }">${order.paymentMethod}</span>
-              <span class="font-black text-blue-900 text-lg">$${order.total}</span>
-            </div>
+            <div class="text-sm text-slate-600">${order.items || '<span class="italic text-slate-400">No items</span>'}</div>
+            ${historyHtml}
+            ${!isCancelled ? `
+              <div class="mt-2 flex justify-between text-xs">
+                <button onclick="openEditModal(${realIndex})" class="text-blue-600 font-bold py-1 active:opacity-50">Edit</button>
+                <button onclick="cancelOrder(${realIndex})" class="text-slate-400 font-bold py-1 active:opacity-50">Cancel</button>
+              </div>
+            ` : ''}
           </div>
-          <div class="text-sm text-slate-600">${order.items}</div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     render();
