@@ -14,13 +14,17 @@
 
   <!-- Header -->
   <header class="sticky top-0 z-50 text-white shadow-lg" style="background: linear-gradient(105deg, #f59e0b 0%, #f59e0b 45%, #166534 55%, #166534 100%)">
-    <div class="max-w-md mx-auto px-4 py-4 grid grid-cols-3 items-center">
-      <button onclick="clearHistory()" class="text-orange-100 hover:text-white text-sm font-bold justify-self-start">Clear</button>
-      <div class="text-center">
+    <div class="max-w-md mx-auto px-4 py-4 flex items-center">
+      <div class="w-14 shrink-0">
+        <button onclick="clearHistory()" class="text-orange-100 hover:text-white text-sm font-bold">Clear</button>
+      </div>
+      <div class="text-center flex-1">
         <h1 class="text-2xl font-black tracking-wide whitespace-nowrap" style="font-family: 'Playfair Display', serif">Vision Bazaar</h1>
         <p class="text-orange-100 text-sm mt-1">Order History</p>
       </div>
-      <a href="index.html" class="text-orange-100 hover:text-white text-sm font-bold justify-self-end">&larr; Back</a>
+      <div class="w-14 shrink-0 text-right">
+        <a href="index.html" class="text-orange-100 hover:text-white text-sm font-bold whitespace-nowrap inline-flex items-center h-12">&larr; Back</a>
+      </div>
     </div>
   </header>
 
