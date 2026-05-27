@@ -165,8 +165,8 @@
       { name: '밀크티 + 🍦', emoji: '🧋', price: 5 },
       { name: '팡팡 스파클링 에이드', emoji: '🥤', price: 3 },
       { name: '아메리카노 (Ice/Hot)', emoji: '☕', price: 3 },
-      { name: '쿠키 1팩 (5)', emoji: '🍪', price: 4 },
-      { name: '쿠키 2팩 (10)', emoji: '🍪🍪', price: 7 },
+      { name: '베이커리 1팩', emoji: '🧁', price: 4, subtitle: '쿠키(5) / 크로아상 / 스콘' },
+      { name: '베이커리 2팩', emoji: '🧁🧁', price: 7 },
     ];
 
     const MEALKIT_ITEMS = [
@@ -196,6 +196,7 @@
           <div class="price absolute top-3 right-3">$${item.price}</div>
           <div class="text-3xl mb-2">${item.emoji}</div>
           <div class="font-bold text-slate-900">${item.name}</div>
+          ${item.subtitle ? `<div class="text-xs text-slate-400 mt-1">${item.subtitle}</div>` : ''}
         </button>
       `).join('');
 
