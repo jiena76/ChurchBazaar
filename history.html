@@ -280,15 +280,8 @@
       render();
     }
 
-    async function syncToSheets(data) {
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-      } catch (err) {
-        console.error('Failed to sync to Google Sheets', err);
-      }
+    function syncToSheets(data) {
+      navigator.sendBeacon(GOOGLE_SCRIPT_URL, JSON.stringify(data));
     }
 
     function render() {

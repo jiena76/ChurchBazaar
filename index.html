@@ -132,10 +132,6 @@
           <div class="text-center text-slate-400 italic py-2">Cart is empty</div>
         </div>
 
-        <div id="processing-spinner" class="hidden text-center py-2">
-          <span class="inline-block w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin"></span>
-          <span class="text-sm text-slate-500 ml-2 font-bold">Saving...</span>
-        </div>
         <div id="payment-buttons" class="flex gap-2 shrink-0">
           <button onclick="confirmPayment('Zelle')" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
             Zelle
@@ -214,7 +210,6 @@
     // CART
     // =========================
     function addToCart(name, price, btnEl) {
-      if (processing) return;
       if (cart[name]) {
         cart[name].qty += 1;
       } else {
@@ -241,7 +236,6 @@
     }
 
     function decreaseItem(name) {
-      if (processing) return;
       if (!cart[name]) return;
       cart[name].qty -= 1;
       if (cart[name].qty <= 0) delete cart[name];
@@ -523,24 +517,13 @@
     // =========================
     // PAYMENT
     // =========================
-    let processing = false;
 
-    function setProcessing(state) {
-      processing = state;
-      const buttons = document.querySelectorAll('#payment-buttons button');
-      buttons.forEach(btn => {
-        btn.disabled = state;
-        btn.classList.toggle('opacity-50', state);
-        btn.classList.toggle('pointer-events-none', state);
-      });
-      document.getElementById('processing-spinner').classList.toggle('hidden', !state);
-    }
+    let submitting = false;
 
-    async function confirmPayment(method) {
+    function confirmPayment(method) {
       const total = getTotal();
-      if (total === 0 || processing) return;
-
-      setProcessing(true);
+      if (total === 0 || submitting) return;
+      submitting = true;
 
       const items = Object.entries(cart).map(([name, item]) => `${item.qty}x ${name}`);
       const quantities = {};
@@ -564,21 +547,14 @@
       history.unshift(orderData);
       localStorage.setItem('vision_orders', JSON.stringify(history));
 
-      // Send to Google Sheets
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify(orderData)
-        });
-      } catch (err) {
-        console.error('Failed to save to Google Sheets', err);
-      }
+      // Send to Google Sheets (fire-and-forget)
+      navigator.sendBeacon(GOOGLE_SCRIPT_URL, JSON.stringify(orderData));
 
-      setProcessing(false);
       showToast(`#${currentOrderId} - $${total} (${method})`);
 
       currentOrderId = generateOrderId();
       clearCart();
+      submitting = false;
     }
 
     // =========================
