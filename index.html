@@ -118,7 +118,7 @@
       </div>
 
       <!-- Expandable details -->
-      <div id="cart-details" class="mt-3">
+      <div id="cart-details" class="mt-3 hidden">
         <div id="cart-items" class="space-y-2 max-h-36 overflow-y-auto mb-3 transition-all duration-300">
           <div class="text-center text-slate-400 italic py-2">Cart is empty</div>
         </div>
@@ -205,6 +205,11 @@
       } else {
         cart[name] = { price, qty: 1 };
       }
+      if (!cartOpenedOnce && cartState === 'collapsed') {
+        cartState = 'normal';
+        cartOpenedOnce = true;
+        applyCartState();
+      }
       updateUI();
     }
 
@@ -241,7 +246,8 @@
     // UI
     // =========================
     // Cart states: 'collapsed' | 'normal' | 'full'
-    let cartState = 'normal';
+    let cartState = 'collapsed';
+    let cartOpenedOnce = false;
 
     function cartNeedsFullMode() {
       const items = document.getElementById('cart-items');
@@ -249,6 +255,7 @@
     }
 
     function toggleCartFull() {
+      cartOpenedOnce = true;
       if (cartState === 'collapsed') {
         cartState = 'normal';
       } else if (cartState === 'normal') {
