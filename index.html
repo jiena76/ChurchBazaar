@@ -39,7 +39,6 @@
       transition: height 0.35s cubic-bezier(0.32, 0.72, 0, 1);
       will-change: height;
       overflow: hidden;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
       z-index: 60;
     }
     #cart-section.dragging {
@@ -260,8 +259,8 @@
     // =========================
     let cartState = 'collapsed';
 
-    const COLLAPSED_HEIGHT = 90;
-    const NORMAL_HEIGHT = 300;
+    const COLLAPSED_HEIGHT = 70;
+    const NORMAL_HEIGHT = 280;
 
     function getViewportHeight() {
       return (window.visualViewport ? window.visualViewport.height : window.innerHeight);
