@@ -18,7 +18,7 @@
       transition: all 0.12s ease;
     }
     .menu-btn:active { transform: scale(0.97); background: #eff6ff; }
-    .price { color: #2563eb; font-weight: 900; margin-top: 0.35rem; font-size: 1.125rem; }
+    .price { color: #2563eb; font-weight: 900; font-size: 1.125rem; }
     .qty-btn {
       width: 38px; height: 38px; border-radius: 999px;
       font-size: 1.25rem; font-weight: 900;
@@ -183,19 +183,19 @@
     function renderMenu() {
       const grid = document.getElementById('menu-grid');
       grid.innerHTML = MENU_ITEMS.map(item => `
-        <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn">
+        <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn relative">
+          <div class="price absolute top-3 right-3">$${item.price}</div>
           <div class="text-3xl mb-2">${item.emoji}</div>
           <div class="font-bold text-slate-900">${item.name}</div>
-          <div class="price">$${item.price}</div>
         </button>
       `).join('');
 
       const mealkitGrid = document.getElementById('mealkit-grid');
       mealkitGrid.innerHTML = MEALKIT_ITEMS.map(item => `
-        <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn">
+        <button onclick="addToCart('${item.name}', ${item.price})" class="menu-btn relative">
+          <div class="price absolute top-3 right-3">$${item.price}</div>
           <div class="text-3xl mb-2">${item.emoji}</div>
           <div class="font-bold text-slate-900">${item.name}</div>
-          <div class="price">$${item.price}</div>
         </button>
       `).join('');
     }
