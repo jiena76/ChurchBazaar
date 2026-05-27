@@ -543,13 +543,20 @@
       setProcessing(true);
 
       const items = Object.entries(cart).map(([name, item]) => `${item.qty}x ${name}`);
+      const quantities = {};
+      Object.entries(cart).forEach(([name, item]) => {
+        quantities[name] = item.qty;
+      });
 
+      const discount = getDiscount();
       const orderData = {
         timestamp: new Date().toISOString(),
         orderNumber: currentOrderId,
         paymentMethod: method,
         items: items.join(', '),
-        total: total
+        total: total,
+        quantities: quantities,
+        discount: discount || ''
       };
 
       // Save to local history

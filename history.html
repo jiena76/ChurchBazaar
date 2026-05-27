@@ -188,8 +188,16 @@
       return cart;
     }
 
+    function getEditDiscount() {
+      if (editCart['돈까스'] && editCart['닭갈비']) {
+        return Math.min(editCart['돈까스'].qty, editCart['닭갈비'].qty) * 5;
+      }
+      return 0;
+    }
+
     function getEditTotal() {
-      return Object.values(editCart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      const subtotal = Object.values(editCart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      return subtotal - getEditDiscount();
     }
 
 
@@ -257,15 +265,15 @@
           removed: removed,
           remaining: remaining
         });
-        const removedForSheets = removed.map(r => ({
-          name: r.name,
-          qty: r.qty,
-          remaining: editCart[r.name] ? editCart[r.name].qty : 0
-        }));
+        const quantities = {};
+        Object.entries(editCart).forEach(([name, item]) => {
+          quantities[name] = item.qty;
+        });
+        const discount = (editCart['돈까스'] && editCart['닭갈비']) ? Math.min(editCart['돈까스'].qty, editCart['닭갈비'].qty) * 5 : 0;
         order.items = newItems;
         order.total = newTotal;
         saveOrders(orders);
-        syncToSheets({ ...order, action: 'update', removedItems: removedForSheets });
+        syncToSheets({ ...order, action: 'update', quantities: quantities, discount: discount || '' });
       }
 
       closeEditModal();
