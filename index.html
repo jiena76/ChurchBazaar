@@ -112,9 +112,9 @@
 
       <!-- Order bar with drag handle in center -->
       <div id="cart-handle" class="grid grid-cols-3 items-center cart-handle-area">
-        <div class="flex items-center gap-2">
-          <div id="order-number" class="text-lg font-black text-blue-900">Order #1001</div>
-          <span id="cart-badge" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full hidden">0 items</span>
+        <div class="flex items-center gap-2 min-w-0">
+          <div id="order-number" class="text-base font-black text-blue-900 whitespace-nowrap truncate shrink">Order #1001</div>
+          <span id="cart-badge" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full hidden whitespace-nowrap shrink-0">0 items</span>
         </div>
         <div class="flex justify-center">
           <div class="cart-expand-handle"></div>
@@ -233,11 +233,11 @@
 
     function clearCart() {
       cart = {};
-      if (cartState !== 'collapsed') {
+      if (cartState === 'full') {
         cartState = 'normal';
       }
       updateUI();
-      if (cartState === 'normal') {
+      if (cartState !== 'collapsed') {
         snapToContent();
       }
     }
@@ -295,11 +295,11 @@
     function getSnapPoints() {
       const isEmpty = Object.keys(cart).length === 0;
       if (isEmpty) return [COLLAPSED_HEIGHT];
+      const contentH = getContentHeight();
       if (cartNeedsFullMode()) {
-        const contentH = Math.min(getContentHeight(), getFullHeight());
-        return [COLLAPSED_HEIGHT, Math.min(getContentHeight(), NORMAL_HEIGHT), contentH];
+        return [COLLAPSED_HEIGHT, Math.min(contentH, NORMAL_HEIGHT), Math.min(contentH, getFullHeight())];
       }
-      return [COLLAPSED_HEIGHT, Math.min(getContentHeight(), NORMAL_HEIGHT)];
+      return [COLLAPSED_HEIGHT, Math.min(contentH, NORMAL_HEIGHT)];
     }
 
     function snapToNearest(height) {
@@ -321,7 +321,6 @@
       const details = document.getElementById('cart-details');
       section.style.height = h + 'px';
       if (h <= COLLAPSED_HEIGHT) {
-        details.classList.add('hidden');
         cartState = 'collapsed';
       } else {
         details.classList.remove('hidden');
@@ -329,10 +328,33 @@
       }
     }
 
+    let hideListener = null;
+
     function snapCart(targetHeight) {
       const section = document.getElementById('cart-section');
+      const details = document.getElementById('cart-details');
+      if (hideListener) {
+        section.removeEventListener('transitionend', hideListener);
+        hideListener = null;
+      }
+      const currentH = section.offsetHeight;
       section.classList.remove('dragging');
+      section.offsetHeight;
       setCartHeight(targetHeight);
+      if (targetHeight <= COLLAPSED_HEIGHT) {
+        if (Math.abs(currentH - targetHeight) < 2) {
+          details.classList.add('hidden');
+        } else {
+          hideListener = function() {
+            section.removeEventListener('transitionend', hideListener);
+            hideListener = null;
+            if (cartState === 'collapsed') {
+              details.classList.add('hidden');
+            }
+          };
+          section.addEventListener('transitionend', hideListener);
+        }
+      }
       requestAnimationFrame(updateBottomPadding);
     }
 
@@ -343,13 +365,22 @@
     let isDragging = false;
 
     function onDragStart(e) {
+      const isEmpty = Object.keys(cart).length === 0;
+      if (isEmpty) {
+        if (cartState === 'collapsed') {
+          snapToContent();
+        } else {
+          snapCart(COLLAPSED_HEIGHT);
+        }
+        e.preventDefault();
+        return;
+      }
       const section = document.getElementById('cart-section');
       section.classList.add('dragging');
       isDragging = true;
       dragStartY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
       dragStartHeight = section.offsetHeight;
-      const isEmpty = Object.keys(cart).length === 0;
-      dragMaxHeight = isEmpty ? COLLAPSED_HEIGHT : (cartNeedsFullMode() ? Math.min(getContentHeight(), getFullHeight()) : Math.min(getContentHeight(), NORMAL_HEIGHT));
+      dragMaxHeight = cartNeedsFullMode() ? Math.min(getContentHeight(), getFullHeight()) : Math.min(getContentHeight(), NORMAL_HEIGHT);
       e.preventDefault();
     }
 
@@ -360,12 +391,6 @@
       const newHeight = Math.max(COLLAPSED_HEIGHT, Math.min(dragMaxHeight, dragStartHeight + delta));
       const section = document.getElementById('cart-section');
       section.style.height = newHeight + 'px';
-      const details = document.getElementById('cart-details');
-      if (newHeight <= COLLAPSED_HEIGHT) {
-        details.classList.add('hidden');
-      } else {
-        details.classList.remove('hidden');
-      }
     }
 
     function onDragEnd() {
@@ -391,7 +416,7 @@
       const section = document.getElementById('cart-section');
       const currentH = section.offsetHeight;
       section.classList.add('dragging');
-      const h = Math.min(getContentHeight(), NORMAL_HEIGHT);
+      const h = Math.min(getContentHeight() + 4, NORMAL_HEIGHT);
       const target = Math.max(h, COLLAPSED_HEIGHT);
       section.style.height = currentH + 'px';
       section.offsetHeight;
@@ -540,8 +565,8 @@
     // BOTTOM PADDING
     // =========================
     function updateBottomPadding() {
-      const cart = document.getElementById('cart-section');
-      document.body.style.paddingBottom = cart.offsetHeight + 16 + 'px';
+      const cartEl = document.getElementById('cart-section');
+      document.body.style.paddingBottom = cartEl.offsetHeight + 16 + 'px';
     }
 
     // INIT
