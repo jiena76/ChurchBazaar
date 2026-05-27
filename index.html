@@ -132,14 +132,14 @@
           <span class="inline-block w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin"></span>
           <span class="text-sm text-slate-500 ml-2 font-bold">Saving...</span>
         </div>
-        <div id="payment-buttons" class="grid grid-cols-3 gap-2 shrink-0">
-          <button onclick="confirmPayment('Zelle')" class="bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
+        <div id="payment-buttons" class="flex gap-2 shrink-0">
+          <button onclick="confirmPayment('Zelle')" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
             Zelle
           </button>
-          <button onclick="confirmPayment('Cash')" class="bg-slate-800 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
+          <button onclick="confirmPayment('Cash')" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
             Cash
           </button>
-          <button onclick="clearCart()" class="bg-red-100 text-red-600 py-4 rounded-2xl font-black text-base active:scale-95 transition">
+          <button onclick="clearCart()" class="bg-red-100 text-red-600 py-4 px-5 rounded-2xl font-black text-base active:scale-95 transition shrink-0">
             Clear
           </button>
         </div>
