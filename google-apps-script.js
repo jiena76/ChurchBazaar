@@ -72,9 +72,11 @@ function doPost(e) {
 }
 
 function findRowByOrderNumber(sheet, orderNumber) {
-  const data = sheet.getRange(1, 2, sheet.getLastRow(), 1).getValues();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 4) return null;
+  const data = sheet.getRange(4, 2, lastRow - 3, 1).getValues();
   for (let i = 0; i < data.length; i++) {
-    if (data[i][0] === orderNumber) return i + 1;
+    if (String(data[i][0]) === String(orderNumber)) return i + 4;
   }
   return null;
 }
