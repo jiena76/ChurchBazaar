@@ -210,13 +210,20 @@
       } else {
         cart[name] = { price, qty: 1 };
       }
+      const wasCollapsed = cartState === 'collapsed';
+      const nearBottom = (window.scrollY + window.innerHeight) >= (document.body.scrollHeight - 100);
       const wasEmpty = Object.keys(cart).length === 1 && cart[name].qty === 1;
-      if (wasEmpty && cartState === 'collapsed') {
+      if (wasEmpty && wasCollapsed) {
         cartState = 'normal';
       }
       updateUI();
       if (cartState === 'normal') {
         snapToContent();
+      }
+      if (wasCollapsed && cartState !== 'collapsed' && nearBottom) {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        });
       }
     }
 
@@ -337,6 +344,7 @@
         section.removeEventListener('transitionend', hideListener);
         hideListener = null;
       }
+      lastSnapTarget = targetHeight;
       const currentH = section.offsetHeight;
       section.classList.remove('dragging');
       section.offsetHeight;
@@ -564,9 +572,11 @@
     // =========================
     // BOTTOM PADDING
     // =========================
+    let lastSnapTarget = COLLAPSED_HEIGHT;
+
     function updateBottomPadding() {
-      const cartEl = document.getElementById('cart-section');
-      document.body.style.paddingBottom = cartEl.offsetHeight + 16 + 'px';
+      const padding = cartState === 'collapsed' ? COLLAPSED_HEIGHT + 16 : Math.min(lastSnapTarget, NORMAL_HEIGHT) + 16;
+      document.body.style.paddingBottom = padding + 'px';
     }
 
     // INIT
