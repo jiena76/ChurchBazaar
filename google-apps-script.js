@@ -51,6 +51,16 @@ function doPost(e) {
     const row = findRowByOrderNumber(sheet, data.orderNumber);
     if (row) {
       sheet.getRange(row, 4).setValue(0);
+      ITEM_COLUMNS.forEach((name, i) => {
+        const col = 5 + i;
+        if (sheet.getRange(row, col).getValue()) {
+          sheet.getRange(row, col).setValue(0);
+        }
+      });
+      const discountCol = 5 + ITEM_COLUMNS.length;
+      if (sheet.getRange(row, discountCol).getValue()) {
+        sheet.getRange(row, discountCol).setValue(0);
+      }
       const lastCol = 5 + ITEM_COLUMNS.length;
       sheet.getRange(row, 1, 1, lastCol).setFontLine('line-through');
     }
