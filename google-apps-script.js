@@ -35,6 +35,9 @@ function doPost(e) {
     });
     row.push(data.discount || '');
     sheet.appendRow(row);
+    const newRow = sheet.getLastRow();
+    const lastCol = 5 + ITEM_COLUMNS.length;
+    sheet.getRange(newRow, 1, 1, lastCol).setFontLine('none');
   } else if (action === 'update') {
     const row = findRowByOrderNumber(sheet, data.orderNumber);
     if (row) {
