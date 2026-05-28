@@ -95,29 +95,29 @@
       <div id="mealkit-grid" class="grid grid-cols-2 gap-3"></div>
     </section>
 
-    <!-- QR (shown on Zelle tap) -->
-    <section id="qr-section" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="hideQR()">
-      <div class="bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center max-w-sm mx-4" onclick="event.stopPropagation()">
-        <div class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-black mb-4">Scan to Pay via Zelle</div>
-        <img src="emmanuel-church-zelle-qr-code.png" alt="Zelle QR" class="w-64 h-64 rounded-3xl border-4 border-blue-900 bg-white" />
-        <div class="text-center mt-4">
-          <div class="font-black text-slate-900 text-lg">Finance@kepc.org</div>
-          <div class="text-sm text-slate-400 mt-1">Scan &rarr; Enter Amount &rarr; Send</div>
-        </div>
-        <button onclick="hideQR()" class="mt-4 px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-bold text-sm">Close</button>
-      </div>
-    </section>
-
-    <!-- Cashier Name Modal -->
-    <section id="cashier-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center">
-      <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-sm mx-4 w-full">
-        <h2 class="font-black text-lg text-slate-900 text-center mb-4">Enter Cashier Name</h2>
-        <input id="cashier-input" type="text" placeholder="Full name" onkeydown="if(event.key==='Enter')saveCashierName()" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-blue-500 mb-4" />
-        <button id="cashier-save-btn" onclick="saveCashierName()" class="w-full bg-blue-900 text-white py-3 rounded-2xl font-black active:scale-95 transition">Start</button>
-      </div>
-    </section>
-
   </main>
+
+  <!-- QR (shown on Zelle tap) -->
+  <section id="qr-section" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="hideQR()">
+    <div class="bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center max-w-sm mx-4" onclick="event.stopPropagation()">
+      <div class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-black mb-4">Scan to Pay via Zelle</div>
+      <img src="emmanuel-church-zelle-qr-code.png" alt="Zelle QR" class="w-64 h-64 rounded-3xl border-4 border-blue-900 bg-white" />
+      <div class="text-center mt-4">
+        <div class="font-black text-slate-900 text-lg">Finance@kepc.org</div>
+        <div class="text-sm text-slate-400 mt-1">Scan &rarr; Enter Amount &rarr; Send</div>
+      </div>
+      <button onclick="hideQR()" class="mt-4 px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-bold text-sm">Close</button>
+    </div>
+  </section>
+
+  <!-- Cashier Name Modal -->
+  <section id="cashier-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center">
+    <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-sm mx-4 w-full">
+      <h2 class="font-black text-lg text-slate-900 text-center mb-4">Enter Cashier Name</h2>
+      <input id="cashier-input" type="text" placeholder="Full name" onkeydown="if(event.key==='Enter')saveCashierName()" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-blue-500 mb-4" />
+      <button id="cashier-save-btn" onclick="saveCashierName()" class="w-full bg-blue-900 text-white py-3 rounded-2xl font-black active:scale-95 transition">Start</button>
+    </div>
+  </section>
 
   <!-- Bottom Sticky Cart -->
   <section id="cart-section" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl flex flex-col">
