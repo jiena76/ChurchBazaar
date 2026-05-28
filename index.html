@@ -123,7 +123,7 @@
         <div class="flex justify-center">
           <div class="cart-expand-handle"></div>
         </div>
-        <div id="cart-total" class="text-2xl font-black text-blue-900 text-right">$0</div>
+        <div class="text-right"><span id="cart-total" class="text-2xl font-black text-blue-900 inline-block px-2 rounded-lg">$0</span></div>
       </div>
 
       <!-- Expandable details -->
@@ -133,14 +133,22 @@
         </div>
 
         <div id="payment-buttons" class="flex gap-2 shrink-0">
-          <button onclick="confirmPayment('Zelle')" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
+          <button onclick="enterConfirmMode('Zelle')" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
             Zelle
           </button>
-          <button onclick="confirmPayment('Cash')" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
+          <button onclick="enterConfirmMode('Cash')" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">
             Cash
           </button>
-          <button onclick="clearCart()" class="bg-red-100 text-red-600 py-4 px-5 rounded-2xl font-black text-base active:scale-95 transition shrink-0">
+          <button onclick="clearCart()" class="w-20 bg-red-100 text-red-600 py-4 rounded-2xl font-black text-base active:scale-95 transition shrink-0">
             Clear
+          </button>
+        </div>
+        <div id="confirm-buttons" class="hidden flex gap-2 shrink-0">
+          <button id="confirm-submit-btn" onclick="confirmPayment(pendingMethod)" class="flex-1 py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition text-white">
+            Submit
+          </button>
+          <button onclick="exitConfirmMode()" class="w-20 bg-slate-200 text-slate-700 py-4 rounded-2xl font-black text-base active:scale-95 transition shrink-0">
+            Back
           </button>
         </div>
       </div>
@@ -210,6 +218,14 @@
     // CART
     // =========================
     function addToCart(name, price, btnEl) {
+      if (confirmMode) {
+        confirmMode = false;
+        pendingMethod = '';
+        document.getElementById('cart-total').classList.remove('bg-yellow-200');
+        document.getElementById('payment-buttons').classList.remove('hidden');
+        document.getElementById('confirm-buttons').classList.add('hidden');
+        cartState = 'normal';
+      }
       if (cart[name]) {
         cart[name].qty += 1;
       } else {
@@ -380,6 +396,7 @@
     let isDragging = false;
 
     function onDragStart(e) {
+      if (confirmMode) { e.preventDefault(); return; }
       const isEmpty = Object.keys(cart).length === 0;
       if (isEmpty) {
         if (cartState === 'collapsed') {
@@ -451,7 +468,7 @@
       const itemCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
 
       if (itemCount > 0) {
-        badge.textContent = `${itemCount} item${itemCount > 1 ? 's' : ''}`;
+        badge.textContent = itemCount;
         badge.classList.remove('hidden');
       } else {
         badge.classList.add('hidden');
@@ -519,6 +536,73 @@
     // =========================
 
     let submitting = false;
+    let pendingMethod = '';
+    let confirmMode = false;
+
+    function enterConfirmMode(method) {
+      const total = getTotal();
+      if (total === 0) return;
+      pendingMethod = method;
+      confirmMode = true;
+
+      // Swap buttons
+      document.getElementById('payment-buttons').classList.add('hidden');
+      document.getElementById('confirm-buttons').classList.remove('hidden');
+
+      // Style submit button based on method
+      const submitBtn = document.getElementById('confirm-submit-btn');
+      submitBtn.textContent = `Submit ${method} Order`;
+      submitBtn.className = `flex-1 py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition text-white ${method === 'Zelle' ? 'bg-green-600' : 'bg-slate-800'}`;
+
+      // Highlight total
+      const totalEl = document.getElementById('cart-total');
+      totalEl.classList.add('bg-yellow-200');
+
+      // Re-render cart without +/- buttons
+      renderCartConfirmation();
+
+      // Expand cart to show all items
+      cartState = 'full';
+      const contentH = Math.min(getContentHeight() + 4, getFullHeight());
+      snapCart(contentH);
+    }
+
+    function exitConfirmMode() {
+      confirmMode = false;
+      pendingMethod = '';
+      document.getElementById('payment-buttons').classList.remove('hidden');
+      document.getElementById('confirm-buttons').classList.add('hidden');
+      document.getElementById('cart-total').classList.remove('bg-yellow-200');
+      updateUI();
+    }
+
+    function renderCartConfirmation() {
+      const cartItems = document.getElementById('cart-items');
+      let html = Object.entries(cart).map(([name, item]) => `
+        <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2" style="min-height: 54px;">
+          <div>
+            <div class="font-bold text-slate-900 text-sm">${name}</div>
+            <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-[38px]"></div>
+            <div class="font-black text-lg w-6 text-center">${item.qty}</div>
+            <div class="w-[38px]"></div>
+          </div>
+        </div>
+      `).join('');
+
+      const discount = getDiscount();
+      if (discount > 0) {
+        html += `
+          <div class="flex justify-between items-center bg-green-50 rounded-xl px-3 py-2 border border-green-200">
+            <div class="font-bold text-green-700 text-sm">밀키트 세트 할인</div>
+            <div class="font-black text-green-700">-$${discount}</div>
+          </div>
+        `;
+      }
+      cartItems.innerHTML = html;
+    }
 
     function confirmPayment(method) {
       const total = getTotal();
@@ -553,6 +637,11 @@
       showToast(`#${currentOrderId} - $${total} (${method})`);
 
       currentOrderId = generateOrderId();
+      confirmMode = false;
+      pendingMethod = '';
+      document.getElementById('cart-total').classList.remove('bg-yellow-200');
+      document.getElementById('payment-buttons').classList.remove('hidden');
+      document.getElementById('confirm-buttons').classList.add('hidden');
       clearCart();
       submitting = false;
     }
