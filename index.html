@@ -170,13 +170,16 @@
       { name: '팡팡 스파클링 에이드', emoji: '🥤', price: 3 },
       { name: '아메리카노', emoji: '☕', price: 3, subtitle: 'Ice / Hot' },
       { name: '베이커리 1팩', emoji: '🍪', price: 4, subtitle: '쿠키(5) / 크로아상 / 스콘' },
-      { name: '베이커리 2팩', emoji: '🍪🍪', price: 7 },
+      { name: '베이커리 2팩', emoji: '🍪🍪', price: 7, cartEmoji: '<span style="display:inline-grid;line-height:1;position:relative;top:-2.5px">🍪<br>🍪</span>' },
     ];
 
     const MEALKIT_ITEMS = [
       { name: '돈까스', emoji: '🐷', price: 25 },
       { name: '닭갈비', emoji: '🐔', price: 30 },
     ];
+
+    const EMOJI_MAP = {};
+    [...MENU_ITEMS, ...MEALKIT_ITEMS].forEach(item => { EMOJI_MAP[item.name] = item.cartEmoji || item.emoji; });
 
     let cart = JSON.parse(sessionStorage.getItem('vision_cart') || '{}');
     let currentOrderId = sessionStorage.getItem('vision_orderId') || generateOrderId();
@@ -479,9 +482,12 @@
       } else {
         let html = Object.entries(cart).map(([name, item]) => `
           <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2">
-            <div>
-              <div class="font-bold text-slate-900 text-sm">${name}</div>
-              <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+            <div class="flex items-center gap-2">
+              <span class="w-8 text-center text-lg shrink-0">${EMOJI_MAP[name] || ''}</span>
+              <div>
+                <div class="font-bold text-slate-900 text-sm">${name}</div>
+                <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+              </div>
             </div>
             <div class="flex items-center gap-2">
               <button onclick="decreaseItem('${name}')" class="qty-btn bg-red-100 text-red-600">&minus;</button>
@@ -580,9 +586,12 @@
       const cartItems = document.getElementById('cart-items');
       let html = Object.entries(cart).map(([name, item]) => `
         <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2" style="min-height: 54px;">
-          <div>
-            <div class="font-bold text-slate-900 text-sm">${name}</div>
-            <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+          <div class="flex items-center gap-2">
+            <span class="w-8 text-center text-lg shrink-0">${EMOJI_MAP[name] || ''}</span>
+            <div>
+              <div class="font-bold text-slate-900 text-sm">${name}</div>
+              <div class="text-xs text-slate-400">$${item.price} x ${item.qty} = $${item.price * item.qty}</div>
+            </div>
           </div>
           <div class="flex items-center gap-2">
             <div class="w-[38px]"></div>
