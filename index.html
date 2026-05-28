@@ -113,8 +113,9 @@
   <!-- Cashier Name Modal -->
   <section id="cashier-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center">
     <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-sm mx-4 w-full">
-      <h2 class="font-black text-lg text-slate-900 text-center mb-4">Enter Cashier Name</h2>
-      <input id="cashier-input" type="text" placeholder="Full name" onkeydown="if(event.key==='Enter')saveCashierName()" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-blue-500 mb-4" />
+      <h2 class="font-black text-lg text-slate-900 text-center mb-1">캐셔 이름 입력</h2>
+      <p class="text-sm text-slate-400 text-center mb-4">Enter Cashier Name</p>
+      <input id="cashier-input" type="text" placeholder="이름 (Full name)" onkeydown="if(event.key==='Enter')saveCashierName()" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-blue-500 mb-4" />
       <button id="cashier-save-btn" onclick="saveCashierName()" class="w-full bg-blue-900 text-white py-3 rounded-2xl font-black active:scale-95 transition">Start</button>
     </div>
   </section>
@@ -208,6 +209,12 @@
     function saveCashierName() {
       const name = document.getElementById('cashier-input').value.trim();
       if (!name) return;
+      const hasKorean = /[가-힣]/.test(name);
+      const minLength = hasKorean ? 2 : 5;
+      if (name.length < minLength) {
+        alert(hasKorean ? '이름을 2자 이상 입력해주세요.' : 'Please enter at least 5 characters.');
+        return;
+      }
       cashierName = name;
       localStorage.setItem('vision_cashier', cashierName);
       document.getElementById('cashier-display').textContent = 'Cashier: ' + cashierName;
