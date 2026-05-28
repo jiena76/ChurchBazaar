@@ -3,7 +3,7 @@
  *
  * SETUP:
  * 1. Create a new Google Sheet
- * 2. Add headers in Row 1: Timestamp | Order ID | Payment | Total | 닭곰탕 | 떡볶이 | 밀크티 | 밀크티 + 🍦 | 팡팡 스파클링 에이드 | 아메리카노 | 베이커리 1팩 | 베이커리 2팩 | 돈까스 | 닭갈비 | 밀키트 세트 할인
+ * 2. Add headers in Row 1: Timestamp | Order ID | Cashier | Payment | Total | 닭곰탕 | 떡볶이 | 밀크티 | 밀크티 + 🍦 | 팡팡 스파클링 에이드 | 아메리카노 | 베이커리 1팩 | 베이커리 2팩 | 돈까스 | 닭갈비 | 밀키트 세트 할인
  * 3. Go to Extensions > Apps Script
  * 4. Paste this code, save
  * 5. Click Deploy > New deployment > Web app
@@ -27,6 +27,7 @@ function doPost(e) {
     const row = [
       data.timestamp,
       data.orderNumber,
+      data.cashier || '',
       data.paymentMethod,
       data.total
     ];
@@ -36,35 +37,35 @@ function doPost(e) {
     row.push(data.discount || '');
     sheet.appendRow(row);
     const newRow = sheet.getLastRow();
-    const lastCol = 5 + ITEM_COLUMNS.length;
+    const lastCol = 6 + ITEM_COLUMNS.length;
     sheet.getRange(newRow, 1, 1, lastCol).setFontLine('none');
   } else if (action === 'update') {
     const row = findRowByOrderNumber(sheet, data.orderNumber);
     if (row) {
-      sheet.getRange(row, 4).setValue(data.total);
+      sheet.getRange(row, 5).setValue(data.total);
       ITEM_COLUMNS.forEach((name, i) => {
-        const col = 5 + i;
+        const col = 6 + i;
         const qty = data.quantities && data.quantities[name] ? data.quantities[name] : '';
         sheet.getRange(row, col).setValue(qty);
       });
-      const discountCol = 5 + ITEM_COLUMNS.length;
+      const discountCol = 6 + ITEM_COLUMNS.length;
       sheet.getRange(row, discountCol).setValue(data.discount || '');
     }
   } else if (action === 'cancel') {
     const row = findRowByOrderNumber(sheet, data.orderNumber);
     if (row) {
-      sheet.getRange(row, 4).setValue(0);
+      sheet.getRange(row, 5).setValue(0);
       ITEM_COLUMNS.forEach((name, i) => {
-        const col = 5 + i;
+        const col = 6 + i;
         if (sheet.getRange(row, col).getValue()) {
           sheet.getRange(row, col).setValue(0);
         }
       });
-      const discountCol = 5 + ITEM_COLUMNS.length;
+      const discountCol = 6 + ITEM_COLUMNS.length;
       if (sheet.getRange(row, discountCol).getValue()) {
         sheet.getRange(row, discountCol).setValue(0);
       }
-      const lastCol = 5 + ITEM_COLUMNS.length;
+      const lastCol = 6 + ITEM_COLUMNS.length;
       sheet.getRange(row, 1, 1, lastCol).setFontLine('line-through');
     }
   }

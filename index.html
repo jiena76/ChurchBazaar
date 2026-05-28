@@ -71,7 +71,7 @@
       </div>
       <div class="text-center flex-1">
         <h1 class="text-2xl font-black tracking-wide whitespace-nowrap" style="font-family: 'Playfair Display', serif">Vision Bazaar</h1>
-        <p class="text-orange-100 text-sm mt-1">Cashier POS</p>
+        <p class="text-orange-100 text-sm mt-1"><span id="cashier-display" onclick="promptCashierName()" class="cursor-pointer inline-block px-3 -mx-3 py-2 -my-2">Cashier POS</span></p>
       </div>
       <div class="w-14 shrink-0 text-right">
         <a href="history.html" class="text-orange-100 hover:text-white text-sm font-bold inline-flex items-center h-12">
@@ -105,6 +105,15 @@
           <div class="text-sm text-slate-400 mt-1">Scan &rarr; Enter Amount &rarr; Send</div>
         </div>
         <button onclick="hideQR()" class="mt-4 px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-bold text-sm">Close</button>
+      </div>
+    </section>
+
+    <!-- Cashier Name Modal -->
+    <section id="cashier-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center">
+      <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-sm mx-4 w-full">
+        <h2 class="font-black text-lg text-slate-900 text-center mb-4">Enter Cashier Name</h2>
+        <input id="cashier-input" type="text" placeholder="Full name" onkeydown="if(event.key==='Enter')saveCashierName()" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-blue-500 mb-4" />
+        <button id="cashier-save-btn" onclick="saveCashierName()" class="w-full bg-blue-900 text-white py-3 rounded-2xl font-black active:scale-95 transition">Start</button>
       </div>
     </section>
 
@@ -183,9 +192,26 @@
 
     let cart = JSON.parse(sessionStorage.getItem('vision_cart') || '{}');
     let currentOrderId = sessionStorage.getItem('vision_orderId') || generateOrderId();
+    let cashierName = localStorage.getItem('vision_cashier') || '';
 
     function generateOrderId() {
       return Math.random().toString(36).substring(2, 6).toUpperCase();
+    }
+
+    function promptCashierName() {
+      document.getElementById('cashier-input').value = cashierName;
+      document.getElementById('cashier-save-btn').textContent = cashierName ? 'Save' : 'Start';
+      document.getElementById('cashier-modal').classList.remove('hidden');
+      document.getElementById('cashier-input').focus();
+    }
+
+    function saveCashierName() {
+      const name = document.getElementById('cashier-input').value.trim();
+      if (!name) return;
+      cashierName = name;
+      localStorage.setItem('vision_cashier', cashierName);
+      document.getElementById('cashier-display').textContent = 'Cashier: ' + cashierName;
+      document.getElementById('cashier-modal').classList.add('hidden');
     }
 
     function persistCart() {
@@ -626,8 +652,9 @@
 
       const discount = getDiscount();
       const orderData = {
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
         orderNumber: currentOrderId,
+        cashier: cashierName,
         paymentMethod: method,
         items: items.join(', '),
         total: total,
@@ -673,6 +700,11 @@
       snapToContent();
     } else {
       snapCart(COLLAPSED_HEIGHT);
+    }
+    if (cashierName) {
+      document.getElementById('cashier-display').textContent = 'Cashier: ' + cashierName;
+    } else {
+      promptCashierName();
     }
     window.addEventListener('resize', () => {
       updateBottomPadding();
