@@ -115,13 +115,48 @@ function addToCart(name, price, btnEl) {
 
 function decreaseItem(name) {
   if (!cart[name]) return;
+  const wasRemoved = cart[name].qty === 1;
+
+  if (wasRemoved) {
+    const items = document.getElementById('cart-items');
+    const itemEl = [...items.children].find(el => el.textContent.includes(name));
+    if (itemEl) {
+      const h = itemEl.offsetHeight;
+      itemEl.style.transition = 'opacity 0.2s ease, height 0.25s ease, margin 0.25s ease, padding 0.25s ease';
+      itemEl.style.opacity = '0';
+      itemEl.style.height = h + 'px';
+      itemEl.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        itemEl.style.height = '0px';
+        itemEl.style.marginTop = '0px';
+        itemEl.style.marginBottom = '0px';
+        itemEl.style.paddingTop = '0px';
+        itemEl.style.paddingBottom = '0px';
+      });
+      setTimeout(() => {
+        delete cart[name];
+        const section = document.getElementById('cart-section');
+        const wasAboveNormal = section.offsetHeight > NORMAL_HEIGHT;
+        updateUI();
+        if (Object.keys(cart).length === 0) {
+          cartState = 'normal';
+          snapToContent();
+        } else if (wasAboveNormal) {
+          const contentH = Math.min(getContentHeight() + 4, getFullHeight());
+          snapCart(contentH);
+        } else if (cartState === 'normal') {
+          snapToContent();
+        }
+      }, 250);
+      return;
+    }
+  }
+
   cart[name].qty -= 1;
-  if (cart[name].qty <= 0) delete cart[name];
+  const section = document.getElementById('cart-section');
+  const wasAboveNormal = section.offsetHeight > NORMAL_HEIGHT;
   updateUI();
-  if (Object.keys(cart).length === 0) {
-    cartState = 'normal';
-    snapToContent();
-  } else if (cartState === 'normal') {
+  if (!wasAboveNormal && cartState === 'normal') {
     snapToContent();
   }
 }
