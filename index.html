@@ -41,13 +41,8 @@
       overflow: hidden;
       z-index: 60;
     }
-    html {
-      overflow: hidden;
-      height: 100%;
-    }
     body {
-      overflow: auto;
-      height: 100%;
+      overscroll-behavior: none;
     }
     #cart-section.dragging {
       transition: none;
@@ -693,7 +688,9 @@
       document.getElementById('cart-total').classList.remove('bg-yellow-200');
       document.getElementById('payment-buttons').classList.remove('hidden');
       document.getElementById('confirm-buttons').classList.add('hidden');
-      clearCart();
+      cart = {};
+      updateUI();
+      snapCart(COLLAPSED_HEIGHT);
       submitting = false;
     }
 
