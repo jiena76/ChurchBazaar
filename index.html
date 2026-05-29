@@ -97,6 +97,9 @@
 
   </main>
 
+  <!-- Confirmation overlay -->
+  <div id="confirm-overlay" class="hidden fixed inset-0 bg-black/30 z-[55]" onclick="exitConfirmMode()"></div>
+
   <!-- QR (shown on Zelle tap) -->
   <section id="qr-section" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="hideQR()">
     <div class="bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center max-w-sm mx-4" onclick="event.stopPropagation()">
@@ -254,14 +257,6 @@
     // CART
     // =========================
     function addToCart(name, price, btnEl) {
-      if (confirmMode) {
-        confirmMode = false;
-        pendingMethod = '';
-        document.getElementById('cart-total').classList.remove('bg-yellow-200');
-        document.getElementById('payment-buttons').classList.remove('hidden');
-        document.getElementById('confirm-buttons').classList.add('hidden');
-        cartState = 'normal';
-      }
       if (cart[name]) {
         cart[name].qty += 1;
       } else {
@@ -295,7 +290,10 @@
       cart[name].qty -= 1;
       if (cart[name].qty <= 0) delete cart[name];
       updateUI();
-      if (cartState === 'normal') {
+      if (Object.keys(cart).length === 0) {
+        cartState = 'normal';
+        snapToContent();
+      } else if (cartState === 'normal') {
         snapToContent();
       }
     }
@@ -603,6 +601,9 @@
       // Re-render cart without +/- buttons
       renderCartConfirmation();
 
+      // Show overlay
+      document.getElementById('confirm-overlay').classList.remove('hidden');
+
       // Expand cart to show all items
       cartState = 'full';
       const contentH = Math.min(getContentHeight() + 4, getFullHeight());
@@ -615,6 +616,7 @@
       document.getElementById('payment-buttons').classList.remove('hidden');
       document.getElementById('confirm-buttons').classList.add('hidden');
       document.getElementById('cart-total').classList.remove('bg-yellow-200');
+      document.getElementById('confirm-overlay').classList.add('hidden');
       updateUI();
     }
 
@@ -688,6 +690,7 @@
       document.getElementById('cart-total').classList.remove('bg-yellow-200');
       document.getElementById('payment-buttons').classList.remove('hidden');
       document.getElementById('confirm-buttons').classList.add('hidden');
+      document.getElementById('confirm-overlay').classList.add('hidden');
       cart = {};
       updateUI();
       snapCart(COLLAPSED_HEIGHT);
