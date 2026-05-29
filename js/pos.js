@@ -113,41 +113,69 @@ function addToCart(name, price, btnEl) {
   }
 }
 
+let animating = false;
+
 function decreaseItem(name) {
   if (!cart[name]) return;
+  if (animating) return;
   const wasRemoved = cart[name].qty === 1;
 
   if (wasRemoved) {
+    animating = true;
     const items = document.getElementById('cart-items');
     const itemEl = [...items.children].find(el => el.textContent.includes(name));
     if (itemEl) {
+      const section = document.getElementById('cart-section');
+      const currentH = section.offsetHeight;
+      const itemPrice = cart[name].price;
+
+      // Pre-calculate target height without this item
+      itemEl.style.display = 'none';
+      delete cart[name];
+      // Hide discount row if it would disappear
+      const discountEl = [...items.children].find(el => el.textContent.includes('밀키트 세트 할인'));
+      const discountWillDisappear = discountEl && getDiscount() === 0;
+      if (discountWillDisappear) discountEl.style.display = 'none';
+      const targetContentH = getContentHeight();
+      cart[name] = { price: itemPrice, qty: 1 };
+      itemEl.style.display = '';
+      if (discountWillDisappear) discountEl.style.display = '';
+
+      let targetH;
+      if (Object.keys(cart).length <= 1) {
+        targetH = Math.min(targetContentH, NORMAL_HEIGHT);
+      } else if (currentH > NORMAL_HEIGHT) {
+        targetH = Math.max(Math.min(targetContentH, getFullHeight()), NORMAL_HEIGHT);
+      } else {
+        targetH = Math.min(targetContentH, NORMAL_HEIGHT);
+      }
+
+      // Animate item collapse + cart resize at the same time
       const h = itemEl.offsetHeight;
-      itemEl.style.transition = 'opacity 0.2s ease, height 0.25s ease, margin 0.25s ease, padding 0.25s ease';
+      itemEl.style.transition = 'opacity 0.15s ease, height 0.3s ease, margin 0.3s ease, padding 0.3s ease';
       itemEl.style.opacity = '0';
       itemEl.style.height = h + 'px';
       itemEl.style.overflow = 'hidden';
+      section.style.transition = 'height 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
       requestAnimationFrame(() => {
         itemEl.style.height = '0px';
         itemEl.style.marginTop = '0px';
         itemEl.style.marginBottom = '0px';
         itemEl.style.paddingTop = '0px';
         itemEl.style.paddingBottom = '0px';
+        section.style.height = targetH + 'px';
       });
       setTimeout(() => {
         delete cart[name];
-        const section = document.getElementById('cart-section');
-        const wasAboveNormal = section.offsetHeight > NORMAL_HEIGHT;
+        section.style.transition = '';
         updateUI();
         if (Object.keys(cart).length === 0) {
           cartState = 'normal';
-          snapToContent();
-        } else if (wasAboveNormal) {
-          const contentH = Math.min(getContentHeight() + 4, getFullHeight());
-          snapCart(contentH);
-        } else if (cartState === 'normal') {
-          snapToContent();
         }
-      }, 250);
+        lastSnapTarget = targetH;
+        requestAnimationFrame(updateBottomPadding);
+        animating = false;
+      }, 320);
       return;
     }
   }
