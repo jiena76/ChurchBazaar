@@ -49,11 +49,19 @@
     </section>
 
     <!-- Filter -->
-    <section class="flex gap-2">
+    <section class="flex gap-2 flex-wrap items-center">
+      <button onclick="toggleItemFilterPanel()" id="item-filter-toggle" class="w-9 h-9 rounded-full text-sm font-bold bg-white border border-slate-200 active:scale-95 transition flex items-center justify-center">🔍</button>
       <button onclick="filterOrders('all')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-blue-900 text-white">All</button>
       <button onclick="filterOrders('Zelle')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Zelle</button>
       <button onclick="filterOrders('Cash')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Cash</button>
       <button onclick="filterOrders('Cancelled')" class="filter-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-slate-700 border">Cancelled</button>
+    </section>
+    <section id="item-filter-panel" class="hidden">
+      <div class="flex gap-2 mb-2">
+        <button onclick="selectAllItems()" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 active:scale-95 transition">Select All</button>
+        <button onclick="clearAllItems()" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 active:scale-95 transition">Clear</button>
+      </div>
+      <div id="item-filter" class="flex gap-2 flex-wrap"></div>
     </section>
 
     <!-- Order List -->
@@ -91,6 +99,7 @@
     };
 
     let currentFilter = 'all';
+    let selectedItems = new Set();
     let editingIndex = -1;
     let editCart = {};
 
@@ -105,6 +114,52 @@
     function clearHistory() {
       if (!confirm('Clear all local order history? (Google Sheets data is not affected)')) return;
       localStorage.removeItem('vision_orders');
+      render();
+    }
+
+    function toggleItemFilterPanel() {
+      document.getElementById('item-filter-panel').classList.toggle('hidden');
+      updateFilterToggleStyle();
+    }
+
+    function toggleItemFilter(name) {
+      if (selectedItems.has(name)) {
+        selectedItems.delete(name);
+      } else {
+        selectedItems.add(name);
+      }
+      updateFilterToggleStyle();
+      renderItemFilter();
+      render();
+    }
+
+    function updateFilterToggleStyle() {
+      const btn = document.getElementById('item-filter-toggle');
+      const panel = document.getElementById('item-filter-panel');
+      const isOpen = !panel.classList.contains('hidden');
+      const hasFilters = selectedItems.size > 0;
+      let style;
+      if (isOpen) {
+        style = 'bg-blue-900/10 ring-[3px] ring-inset ring-blue-900';
+      } else if (hasFilters) {
+        style = 'bg-white ring-[3px] ring-inset ring-blue-900';
+      } else {
+        style = 'bg-white border border-slate-200';
+      }
+      btn.className = `w-9 h-9 rounded-full text-sm font-bold active:scale-95 transition flex items-center justify-center ${style}`;
+    }
+
+    function selectAllItems() {
+      Object.keys(MENU_PRICES).forEach(name => selectedItems.add(name));
+      updateFilterToggleStyle();
+      renderItemFilter();
+      render();
+    }
+
+    function clearAllItems() {
+      selectedItems.clear();
+      updateFilterToggleStyle();
+      renderItemFilter();
       render();
     }
 
@@ -284,6 +339,15 @@
       navigator.sendBeacon(GOOGLE_SCRIPT_URL, JSON.stringify(data));
     }
 
+    function renderItemFilter() {
+      const container = document.getElementById('item-filter');
+      const items = Object.keys(MENU_PRICES);
+      container.innerHTML = items.map(name => {
+        const active = selectedItems.has(name);
+        return `<button onclick="toggleItemFilter('${name}')" class="px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition ${active ? 'bg-blue-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}">${name}</button>`;
+      }).join('');
+    }
+
     function render() {
       const orders = getOrders();
       let filtered;
@@ -293,6 +357,13 @@
         filtered = orders;
       } else {
         filtered = orders.filter(o => o.paymentMethod === currentFilter && o.status !== 'cancelled');
+      }
+
+      if (selectedItems.size > 0) {
+        filtered = filtered.filter(o => {
+          if (!o.items) return false;
+          return [...selectedItems].every(item => o.items.includes(item));
+        });
       }
 
       // Summary (exclude cancelled)
@@ -365,6 +436,7 @@
       }).join('');
     }
 
+    renderItemFilter();
     render();
   </script>
 </body>
