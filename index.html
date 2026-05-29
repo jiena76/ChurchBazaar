@@ -279,12 +279,15 @@
       if (cartState === 'normal') {
         snapToContent();
       }
-      if (wasCollapsed && cartState !== 'collapsed' && btnEl) {
+      if (btnEl) {
         requestAnimationFrame(() => {
           const rect = btnEl.getBoundingClientRect();
+          const headerBottom = document.querySelector('header').offsetHeight;
           const cartTop = window.innerHeight - lastSnapTarget;
           if (rect.bottom > cartTop) {
             window.scrollBy({ top: rect.bottom - cartTop + 16, behavior: 'smooth' });
+          } else if (rect.top < headerBottom) {
+            window.scrollBy({ top: rect.top - headerBottom - 16, behavior: 'smooth' });
           }
         });
       }
