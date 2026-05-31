@@ -19,8 +19,11 @@ function saveOrders(orders) {
   localStorage.setItem('vision_orders', JSON.stringify(orders));
 }
 
-function clearHistory() {
-  if (!confirm('Clear all local order history? (Google Sheets data is not affected)')) return;
+async function clearHistory() {
+  const confirmed = await showConfirmModal('정말 주문 내역을 삭제하시겠습니까?\nClear all local order history?');
+  if (!confirmed) return;
+  const doubleConfirmed = await showConfirmModal('되돌릴 수 없습니다. 정말요?\nThis cannot be undone. Are you sure?');
+  if (!doubleConfirmed) return;
   localStorage.removeItem('vision_orders');
   render();
 }
@@ -106,7 +109,7 @@ function getRemovedItems(previousItemsStr, newCart) {
 let confirmModalCallback = null;
 
 function showConfirmModal(message) {
-  document.getElementById('confirm-message').textContent = message;
+  document.getElementById('confirm-message').innerHTML = message.replace(/\n/g, '<br>');
   document.getElementById('confirm-modal').classList.remove('hidden');
   return new Promise(resolve => { confirmModalCallback = resolve; });
 }
