@@ -505,10 +505,44 @@ function exitConfirmMode() {
   updateUI();
 }
 
+function getPriceColor(price) {
+  if (price % 5 === 0) return 'bg-red-50';
+  if (price === 3) return 'bg-green-50';
+  if (price === 4) return 'bg-yellow-50';
+  if (price === 7) return 'bg-[linear-gradient(to_right,#f0fdf4_50%,#fefce8_50%)]';
+  return 'bg-slate-50';
+}
+
+function getTicketCounts() {
+  let red = 0, yellow = 0, green = 0, stapled = 0;
+  Object.values(cart).forEach(item => {
+    const qty = item.qty;
+    if (item.price === 3) green += qty;
+    else if (item.price === 4) yellow += qty;
+    else if (item.price === 5) red += qty;
+    else if (item.price === 7) stapled += qty;
+    else if (item.price === 25) red += 5 * qty;
+    else if (item.price === 30) red += 6 * qty;
+  });
+  return { red, yellow, green, stapled };
+}
+
 function renderCartConfirmation() {
   const cartItems = document.getElementById('cart-items');
-  let html = Object.entries(cart).map(([name, item]) => `
-    <div class="flex justify-between items-center bg-slate-50 rounded-xl px-3 py-2" style="min-height: 54px;">
+  const tickets = getTicketCounts();
+  let ticketHtml = '<div class="flex items-center gap-3 bg-white rounded-xl px-3 py-2 border border-slate-200 mb-2">';
+  ticketHtml += '<span class="text-xs font-bold text-slate-500">Tickets:</span>';
+  const ticket = (color) => `<svg width="14" height="10" viewBox="0 0 14 10" style="display:inline-block;vertical-align:middle"><rect x="0" y="0" width="14" height="10" rx="2" fill="${color}"/><circle cx="0" cy="5" r="1.5" fill="white"/><circle cx="14" cy="5" r="1.5" fill="white"/></svg>`;
+  if (tickets.red > 0) ticketHtml += `<span class="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded flex items-center gap-1">${ticket('#ef4444')} ${tickets.red}</span>`;
+  if (tickets.yellow > 0) ticketHtml += `<span class="text-xs font-black text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded flex items-center gap-1">${ticket('#facc15')} ${tickets.yellow}</span>`;
+  if (tickets.green > 0) ticketHtml += `<span class="text-xs font-black text-green-700 bg-green-50 px-2 py-0.5 rounded flex items-center gap-1">${ticket('#22c55e')} ${tickets.green}</span>`;
+  const stapledTicket = `<svg width="14" height="10" viewBox="0 0 14 10" style="display:inline-block;vertical-align:middle"><defs><clipPath id="tkt"><rect x="0" y="0" width="14" height="10" rx="2"/></clipPath></defs><g clip-path="url(#tkt)"><rect x="0" y="0" width="7" height="10" fill="#22c55e"/><rect x="7" y="0" width="7" height="10" fill="#facc15"/></g><circle cx="0" cy="5" r="1.5" fill="white"/><circle cx="14" cy="5" r="1.5" fill="white"/></svg>`;
+  if (tickets.stapled > 0) ticketHtml += `<span class="text-xs font-black text-emerald-800 bg-lime-50 px-2 py-0.5 rounded flex items-center gap-1">${stapledTicket} ${tickets.stapled}</span>`;
+  ticketHtml += '</div>';
+
+  let html = ticketHtml;
+  html += Object.entries(cart).map(([name, item]) => `
+    <div class="flex justify-between items-center ${getPriceColor(item.price)} rounded-xl px-3 py-2" style="min-height: 54px;">
       <div class="flex items-center gap-2">
         <span class="w-8 text-center text-lg shrink-0">${EMOJI_MAP[name] || ''}</span>
         <div>
@@ -527,9 +561,9 @@ function renderCartConfirmation() {
   const discount = getDiscount();
   if (discount > 0) {
     html += `
-      <div class="flex justify-between items-center bg-green-50 rounded-xl px-3 py-2 border border-green-200">
-        <div class="font-bold text-green-700 text-sm">밀키트 세트 할인</div>
-        <div class="font-black text-green-700">-$${discount}</div>
+      <div class="flex justify-between items-center bg-purple-50 rounded-xl px-3 py-2 border border-purple-200">
+        <div class="font-bold text-purple-700 text-sm">밀키트 세트 할인</div>
+        <div class="font-black text-purple-700">-$${discount}</div>
       </div>
     `;
   }
