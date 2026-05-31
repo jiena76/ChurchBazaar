@@ -519,6 +519,7 @@ function exitConfirmMode() {
   document.getElementById('confirm-overlay').classList.add('hidden');
   document.getElementById('ticket-bar').classList.add('hidden');
   updateUI();
+  snapToContent();
 }
 
 function getPriceColor(price) {
