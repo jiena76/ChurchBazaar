@@ -39,11 +39,25 @@ function promptCashierName() {
 
 function saveCashierName() {
   const name = document.getElementById('cashier-input').value.trim();
-  if (!name) return;
+  if (!name) {
+    const input = document.getElementById('cashier-input');
+    input.style.borderColor = '#ef4444';
+    input.placeholder = '이름을 입력해주세요 / Enter name';
+    setTimeout(() => {
+      input.style.borderColor = '';
+      input.placeholder = '이름 (Full name)';
+    }, 2000);
+    return;
+  }
   const hasKorean = /[가-힣]/.test(name);
   const minLength = hasKorean ? 2 : 5;
+  const maxLength = hasKorean ? 10 : 20;
   if (name.length < minLength) {
     alert(hasKorean ? '이름을 2자 이상 입력해주세요.' : 'Please enter at least 5 characters.');
+    return;
+  }
+  if (name.length > maxLength) {
+    alert(hasKorean ? '이름을 10자 이하로 입력해주세요.' : 'Please enter 20 characters or less.');
     return;
   }
   cashierName = name;
