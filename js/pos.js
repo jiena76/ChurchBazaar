@@ -517,6 +517,7 @@ function exitConfirmMode() {
   document.getElementById('confirm-buttons').classList.add('hidden');
   document.getElementById('cart-total').classList.remove('bg-yellow-200');
   document.getElementById('confirm-overlay').classList.add('hidden');
+  document.getElementById('ticket-bar').classList.add('hidden');
   updateUI();
 }
 
@@ -544,8 +545,9 @@ function getTicketCounts() {
 
 function renderCartConfirmation() {
   const cartItems = document.getElementById('cart-items');
+  const ticketBar = document.getElementById('ticket-bar');
   const tickets = getTicketCounts();
-  let ticketHtml = '<div class="flex items-center gap-3 bg-white rounded-xl px-3 py-2 border border-slate-200 mb-2">';
+  let ticketHtml = '<div class="flex items-center gap-3 bg-white rounded-xl px-3 py-2 border border-slate-200">';
   ticketHtml += '<span class="text-xs font-bold text-slate-500">Tickets:</span>';
   const ticket = (color) => `<svg width="14" height="10" viewBox="0 0 14 10" style="display:inline-block;vertical-align:middle"><rect x="0" y="0" width="14" height="10" rx="2" fill="${color}"/><circle cx="0" cy="5" r="1.5" fill="white"/><circle cx="14" cy="5" r="1.5" fill="white"/></svg>`;
   if (tickets.red > 0) ticketHtml += `<span class="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded flex items-center gap-1">${ticket('#ef4444')} ${tickets.red}</span>`;
@@ -554,9 +556,10 @@ function renderCartConfirmation() {
   const stapledTicket = `<svg width="14" height="10" viewBox="0 0 14 10" style="display:inline-block;vertical-align:middle"><defs><clipPath id="tkt"><rect x="0" y="0" width="14" height="10" rx="2"/></clipPath></defs><g clip-path="url(#tkt)"><rect x="0" y="0" width="7" height="10" fill="#22c55e"/><rect x="7" y="0" width="7" height="10" fill="#facc15"/></g><circle cx="0" cy="5" r="1.5" fill="white"/><circle cx="14" cy="5" r="1.5" fill="white"/></svg>`;
   if (tickets.stapled > 0) ticketHtml += `<span class="text-xs font-black text-emerald-800 bg-lime-50 px-2 py-0.5 rounded flex items-center gap-1">${stapledTicket} ${tickets.stapled}</span>`;
   ticketHtml += '</div>';
+  ticketBar.innerHTML = ticketHtml;
+  ticketBar.classList.remove('hidden');
 
-  let html = ticketHtml;
-  html += Object.entries(cart).map(([name, item]) => `
+  let html = Object.entries(cart).map(([name, item]) => `
     <div class="flex justify-between items-center ${getPriceColor(item.price)} rounded-xl px-3 py-2" style="min-height: 54px;">
       <div class="flex items-center gap-2">
         <span class="w-8 text-center text-lg shrink-0">${EMOJI_MAP[name] || ''}</span>
@@ -623,6 +626,7 @@ function confirmPayment(method) {
   document.getElementById('payment-buttons').classList.remove('hidden');
   document.getElementById('confirm-buttons').classList.add('hidden');
   document.getElementById('confirm-overlay').classList.add('hidden');
+  document.getElementById('ticket-bar').classList.add('hidden');
   cart = {};
   updateUI();
   snapCart(COLLAPSED_HEIGHT);
