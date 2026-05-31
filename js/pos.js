@@ -640,6 +640,7 @@ function updateBottomPadding() {
 }
 
 // INIT
+document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px');
 renderMenu();
 updateUI();
 initDrag();

@@ -46,8 +46,8 @@
 
   </main>
 
-  <!-- Confirmation overlay -->
-  <div id="confirm-overlay" class="hidden fixed inset-0 bg-black/30 z-[55]" onclick="exitConfirmMode()"></div>
+  <!-- Confirmation overlay (below header) -->
+  <div id="confirm-overlay" class="hidden fixed left-0 right-0 bottom-0 bg-black/30 z-[55]" style="top: var(--header-h, 0px)" onclick="exitConfirmMode()"></div>
 
   <!-- QR (shown on Zelle tap) -->
   <section id="qr-section" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="hideQR()">
