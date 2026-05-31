@@ -576,9 +576,9 @@ function renderCartConfirmation() {
   const discount = getDiscount();
   if (discount > 0) {
     html += `
-      <div class="flex justify-between items-center bg-purple-50 rounded-xl px-3 py-2 border border-purple-200">
-        <div class="font-bold text-purple-700 text-sm">밀키트 세트 할인</div>
-        <div class="font-black text-purple-700">-$${discount}</div>
+      <div class="flex justify-between items-center bg-cyan-50 rounded-xl px-3 py-2 border border-cyan-300">
+        <div class="font-bold text-cyan-600 text-sm">밀키트 세트 할인</div>
+        <div class="font-black text-cyan-600">-$${discount}</div>
       </div>
     `;
   }
