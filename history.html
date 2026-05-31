@@ -73,6 +73,17 @@
 
   </main>
 
+  <!-- Confirm Modal -->
+  <section id="confirm-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center">
+    <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-xs mx-4 w-full text-center">
+      <p id="confirm-message" class="font-bold text-slate-900 text-lg mb-4">Cancel this order?</p>
+      <div class="flex gap-3">
+        <button onclick="confirmModalResolve(false)" class="flex-1 py-3 rounded-2xl font-black text-base bg-slate-200 text-slate-700 active:scale-95 transition">No</button>
+        <button onclick="confirmModalResolve(true)" class="flex-1 py-3 rounded-2xl font-black text-base bg-red-500 text-white active:scale-95 transition">Yes</button>
+      </div>
+    </div>
+  </section>
+
   <!-- Edit Modal -->
   <section id="edit-modal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onclick="closeEditModal()">
     <div class="bg-white rounded-3xl p-5 shadow-2xl max-w-sm mx-4 w-full max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">

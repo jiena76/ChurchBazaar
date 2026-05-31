@@ -103,8 +103,25 @@ function getRemovedItems(previousItemsStr, newCart) {
   return removed;
 }
 
-function cancelOrder(index) {
-  if (!confirm('Cancel this order?')) return;
+let confirmModalCallback = null;
+
+function showConfirmModal(message) {
+  document.getElementById('confirm-message').textContent = message;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+  return new Promise(resolve => { confirmModalCallback = resolve; });
+}
+
+function confirmModalResolve(result) {
+  document.getElementById('confirm-modal').classList.add('hidden');
+  if (confirmModalCallback) {
+    confirmModalCallback(result);
+    confirmModalCallback = null;
+  }
+}
+
+async function cancelOrder(index) {
+  const confirmed = await showConfirmModal('Cancel this order?');
+  if (!confirmed) return;
   const orders = getOrders();
   const order = orders[index];
   if (!order.history) order.history = [];
