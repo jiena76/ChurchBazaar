@@ -22,7 +22,7 @@ function saveOrders(orders) {
 async function clearHistory() {
   const confirmed = await showConfirmModal('정말 주문 내역을 삭제하시겠습니까?\nClear all local order history?');
   if (!confirmed) return;
-  const doubleConfirmed = await showConfirmModal('되돌릴 수 없습니다. 정말요?\nThis cannot be undone. Are you sure?');
+  const doubleConfirmed = await showConfirmModal('되돌릴 수 없습니다.\n정말 하시겠습니까?\nThis cannot be undone.\nAre you sure?');
   if (!doubleConfirmed) return;
   localStorage.removeItem('vision_orders');
   render();
@@ -343,7 +343,7 @@ function render() {
           </div>
           <div class="flex items-center gap-2">
             <span class="px-2 py-1 rounded-full text-xs font-bold ${
-              order.paymentMethod === 'Zelle' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'
+              order.paymentMethod === 'Zelle' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
             }">${order.paymentMethod}</span>
             <span class="font-black text-blue-900 text-lg">$${order.total}</span>
           </div>

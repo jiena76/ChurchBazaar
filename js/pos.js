@@ -495,7 +495,9 @@ function enterConfirmMode(method) {
 
   const submitBtn = document.getElementById('confirm-submit-btn');
   submitBtn.textContent = `Submit ${method} Order`;
-  submitBtn.className = `flex-1 py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition text-white ${method === 'Zelle' ? 'bg-green-600' : 'bg-slate-800'}`;
+  submitBtn.className = 'flex-1 py-4 rounded-2xl font-black text-base shadow-lg active:scale-95 transition text-white';
+  submitBtn.style.background = method === 'Zelle' ? '#6d1ed4' : '';
+  if (method !== 'Zelle') submitBtn.classList.add('bg-green-600');
 
   const totalEl = document.getElementById('cart-total');
   totalEl.classList.add('bg-yellow-200');
